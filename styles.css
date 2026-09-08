@@ -1,0 +1,48 @@
+﻿/* Custom Styles for Preventa App */
+body {
+  background-color: #0b0f19;
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  color: #f1f5f9;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.nav-item {
+  color: #94a3b8;
+  transition: all 0.2s ease;
+}
+.nav-item.active {
+  color: #f59e0b;
+  font-weight: 700;
+}
+.nav-item.active i {
+  color: #f59e0b;
+  transform: scale(1.1);
+}
+
+.cat-pill {
+  background: rgba(30, 41, 59, 0.8);
+  border: 1px solid rgba(71, 85, 105, 0.5);
+  color: #cbd5e1;
+  transition: all 0.2s ease;
+}
+.cat-pill.active {
+  background: #f59e0b;
+  border-color: #f59e0b;
+  color: #090d16;
+  font-weight: 800;
+  box-shadow: 0 0 12px rgba(245, 158, 11, 0.35);
+}
+
+.glass-card {
+  background: linear-gradient(135deg, rgba(30, 41, 59, 0.75) 0%, rgba(15, 23, 42, 0.9) 100%);
+  border: 1px solid rgba(245, 158, 11, 0.2);
+  backdrop-filter: blur(12px);
+}

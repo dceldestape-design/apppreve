@@ -1,0 +1,473 @@
+<!DOCTYPE html>
+<html lang="es" class="min-h-screen bg-slate-950">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <title>DC El Destape - Preventa y Pedidos</title>
+  
+  <meta name="theme-color" content="#0a0d14">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Preventa Destape">
+  <link rel="icon" type="image/png" href="logo.png">
+  <link rel="apple-touch-icon" href="logo.png">
+  <link rel="manifest" href="manifest.json">
+
+  <!-- Tailwind CSS & Fonts -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              50: '#fffbeb',
+              100: '#fef3c7',
+              500: '#f59e0b',
+              600: '#d97706',
+              700: '#b45309',
+              800: '#92400e',
+              900: '#78350f'
+            }
+          }
+        }
+      }
+    }
+  </script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&family=IBM+Plex+Mono:wght@500;600;700&display=swap" rel="stylesheet">
+  
+  <!-- Lucide Icons -->
+  <script src="https://cdn.jsdelivr.net/npm/lucide@0.344.0/dist/umd/lucide.min.js"></script>
+  
+  <link rel="stylesheet" href="styles.css?v=20260908_01">
+</head>
+<body class="min-h-screen font-['Plus_Jakarta_Sans'] text-slate-100 antialiased select-none overflow-x-hidden" style="padding-bottom: 120px !important;">
+
+  <!-- TOP APP BAR -->
+  <header class="sticky top-0 z-40 bg-slate-900/95 backdrop-blur-md border-b border-slate-800/90 px-4 py-2.5 flex items-center justify-between">
+    <div class="flex items-center gap-2.5">
+      <div class="w-10 h-10 rounded-full border border-amber-500/60 p-0.5 bg-black shadow-md shadow-amber-500/20 shrink-0 overflow-hidden">
+        <img src="logo.png" alt="DC El Destape" class="w-full h-full object-cover rounded-full">
+      </div>
+      <div>
+        <div class="flex items-center gap-1.5">
+          <h1 class="text-xs font-black text-white leading-tight uppercase tracking-wider">DC El Destape</h1>
+          <span class="text-[9px] font-black text-amber-300 bg-amber-950/80 border border-amber-500/40 px-1.5 py-0.2 rounded-md uppercase font-mono">Preventa</span>
+        </div>
+        <div class="flex items-center gap-2 mt-0.5">
+          <button onclick="abrirModalVendedor()" id="btnHeaderVendedor" class="flex items-center gap-1.5 px-2 py-0.5 rounded-lg bg-amber-950/60 border border-amber-500/40 hover:border-amber-400 text-[11px] font-bold text-amber-300 active:scale-95 transition-all">
+            <span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
+            <span id="headerVendedorNombre">Mi Perfil</span>
+            <i data-lucide="chevron-down" class="w-3 h-3 text-amber-400/80"></i>
+          </button>
+          <span class="text-[10px] text-slate-500 font-mono">| TC: ₡<span id="headerExchangeRate">520</span></span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Actions: Config & Sync -->
+    <div class="flex items-center gap-1.5">
+      <button onclick="abrirModalConfig()" title="Configuración de Enlace Sheets" class="p-2 rounded-xl bg-slate-800 text-slate-300 hover:text-white active:scale-95 transition-all border border-slate-700/60">
+        <i data-lucide="settings" class="w-4 h-4"></i>
+      </button>
+      <button id="btnSync" onclick="sincronizarConSheets(true)" title="Sincronizar Datos" class="relative p-2 rounded-xl bg-amber-600/20 text-amber-400 hover:bg-amber-600/30 active:scale-95 transition-all border border-amber-500/40">
+        <i data-lucide="refresh-cw" class="w-4 h-4" id="syncIcon"></i>
+        <span id="syncBadge" class="hidden absolute -top-1.5 -right-1.5 min-w-[18px] h-[18px] px-1 bg-amber-500 text-slate-950 font-black text-[10px] rounded-full shadow-lg flex items-center justify-center animate-pulse">0</span>
+      </button>
+    </div>
+  </header>
+
+  <!-- OFFLINE BANNER -->
+  <div id="offlineSyncBanner" class="hidden max-w-md mx-auto px-3.5 py-1.5 mt-2 bg-amber-950/80 border border-amber-500/40 rounded-xl text-amber-200 text-xs font-bold flex items-center justify-between shadow-lg">
+    <div class="flex items-center gap-2">
+      <span class="w-2 h-2 rounded-full bg-amber-400 animate-ping"></span>
+      <span>Modo Offline: Cambios guardados localmente</span>
+    </div>
+    <button onclick="sincronizarConSheets(true)" class="px-2 py-0.5 bg-amber-500 text-slate-950 text-[10px] font-black rounded-md hover:bg-amber-400 active:scale-95">
+      Subir ahora
+    </button>
+  </div>
+
+  <!-- TOAST -->
+  <div id="toast" class="fixed top-16 left-1/2 -translate-x-1/2 z-50 transition-all duration-300 transform -translate-y-20 opacity-0 pointer-events-none max-w-[90vw] w-auto">
+    <div class="px-4 py-3 rounded-2xl shadow-2xl flex items-center gap-3 text-sm font-medium border" id="toastBox">
+      <i data-lucide="info" class="w-5 h-5 shrink-0" id="toastIcon"></i>
+      <span id="toastMsg">Mensaje</span>
+    </div>
+  </div>
+
+  <!-- MAIN CONTAINER -->
+  <main class="max-w-md mx-auto p-4 pb-28 space-y-4">
+
+    <!-- VIEW 1: PRODUCTOS -->
+    <section id="viewProductos" class="space-y-3.5">
+      <div class="relative">
+        <i data-lucide="search" class="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400"></i>
+        <input type="text" id="searchProductos" oninput="filtrarProductos()" placeholder="Buscar licor por nombre o categoría..." 
+          class="w-full pl-10 pr-4 py-2.5 bg-slate-900 border border-slate-700/80 rounded-2xl text-sm text-white placeholder-slate-400 focus:outline-none focus:border-amber-500 transition-all shadow-inner">
+      </div>
+
+      <div id="categoryPills" class="flex gap-1.5 overflow-x-auto pb-1 no-scrollbar text-xs font-medium">
+        <button onclick="filtrarCategoria('Todas')" class="cat-pill active px-3.5 py-1.5 rounded-full shrink-0">Todas</button>
+      </div>
+
+      <div class="flex items-center justify-between text-xs text-slate-400 px-1 font-mono">
+        <span>Catálogo disponible: <b id="prodCount" class="text-amber-400">0</b> licores</span>
+        <button onclick="cambiarOrden()" class="flex items-center gap-1 hover:text-white font-medium text-[11px]">
+          <i data-lucide="arrow-up-down" class="w-3.5 h-3.5 text-slate-400"></i>
+          <span id="sortLabel">A-Z</span>
+        </button>
+      </div>
+
+      <div id="productosList" class="space-y-2.5"></div>
+    </section>
+
+    <!-- VIEW 2: PEDIDOS -->
+    <section id="viewPedidos" class="space-y-4 hidden">
+      <div class="bg-gradient-to-br from-slate-900 via-slate-850 to-slate-900 border border-amber-500/40 rounded-3xl p-4 shadow-xl space-y-3.5">
+        <div class="flex items-center justify-between border-b border-slate-800 pb-2.5">
+          <div class="flex items-center gap-2">
+            <div class="p-2 rounded-xl bg-amber-500/20 text-amber-400">
+              <i data-lucide="shopping-bag" class="w-4 h-4"></i>
+            </div>
+            <div>
+              <h2 class="text-xs font-bold text-white uppercase tracking-wider">Nuevo Pedido / Encargo</h2>
+              <p class="text-[10px] text-slate-400">Para abastecer con la distribuidora</p>
+            </div>
+          </div>
+          <button type="button" onclick="vaciarCarritoPedido()" class="text-[11px] text-rose-400 hover:text-rose-300 font-semibold">Vaciar</button>
+        </div>
+
+        <div class="space-y-1">
+          <label class="block text-xs font-semibold text-slate-300">Cliente del Pedido *</label>
+          <div class="flex items-center gap-1.5">
+            <select id="pedidoClienteSelect" onchange="onPedidoClienteChange()" class="flex-1 px-3 py-2 bg-slate-950 border border-slate-700 rounded-xl text-xs text-white focus:outline-none focus:border-amber-500">
+              <option value="">-- Selecciona un cliente registrado --</option>
+            </select>
+            <button onclick="cambiarVista('clientes'); abrirModalNuevoCliente();" title="Registrar nuevo cliente" class="px-2.5 py-2 bg-amber-600 hover:bg-amber-500 text-slate-950 font-bold rounded-xl text-xs active:scale-95 transition-all flex items-center gap-1">
+              <i data-lucide="user-plus" class="w-3.5 h-3.5"></i>
+              <span>+ Nuevo</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Buscador dinámico de productos en Pedidos -->
+        <div class="space-y-1.5 relative">
+          <label class="block text-xs font-semibold text-slate-300 flex items-center justify-between">
+            <span>Agregar Licores *</span>
+            <span class="text-[10px] text-amber-400 font-normal">Búsqueda rápida</span>
+          </label>
+          <div class="relative">
+            <i data-lucide="search" class="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"></i>
+            <input type="text" id="pedidoBuscarProductoInput" oninput="buscarProductosParaPedido(this.value)" placeholder="Escribe nombre o código de licor..." autocomplete="off"
+              class="w-full pl-9 pr-8 py-2 bg-slate-950 border border-slate-700 rounded-xl text-xs text-white placeholder-slate-500 focus:outline-none focus:border-amber-500 transition-all">
+            <button type="button" onclick="limpiarBuscadorPedido()" id="btnLimpiarBuscadorPedido" class="hidden absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white text-xs">✕</button>
+          </div>
+          <!-- Dropdown flotante con resultados dinámicos -->
+          <div id="pedidoResultadosBusqueda" class="hidden absolute left-0 right-0 top-full mt-1 z-30 bg-slate-900 border border-amber-500/50 rounded-2xl max-h-56 overflow-y-auto shadow-2xl divide-y divide-slate-800"></div>
+        </div>
+
+        <div class="space-y-2">
+          <div class="flex items-center justify-between text-xs font-bold text-slate-300">
+            <span class="flex items-center gap-1">
+              <i data-lucide="layers" class="w-3.5 h-3.5 text-amber-400"></i>
+              Licores agregados (<span id="pedidoItemsCount">0</span>)
+            </span>
+            <span class="text-[10px] text-slate-400 font-normal">Escribe arriba para sumar</span>
+          </div>
+
+          <div id="pedidoItemsList" class="space-y-2 min-h-[50px] max-h-[220px] overflow-y-auto"></div>
+        </div>
+
+        <div class="p-3 bg-slate-950/80 rounded-2xl border border-slate-800 flex items-center justify-between font-mono">
+          <div>
+            <span class="text-[10px] text-slate-400 block font-sans">Total Botellas:</span>
+            <span class="text-sm font-bold text-amber-300" id="pedidoTotalUnidades">0 unids</span>
+          </div>
+          <div class="text-right">
+            <span class="text-[10px] text-slate-400 block font-sans">Monto Venta Estimado:</span>
+            <span class="text-base font-black text-emerald-400" id="pedidoTotalCRC">₡0</span>
+          </div>
+        </div>
+
+        <button onclick="guardarPedidoActual()" class="w-full py-3 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 font-black rounded-2xl shadow-lg shadow-amber-500/20 active:scale-95 transition-all flex items-center justify-center gap-2 text-xs uppercase tracking-wider">
+          <i data-lucide="check-circle" class="w-4 h-4"></i>
+          <span>Confirmar y Enviar Pedido</span>
+        </button>
+      </div>
+
+      <div class="bg-slate-900/80 border border-slate-800 rounded-3xl p-4 space-y-3 shadow-lg">
+        <div class="flex items-center justify-between border-b border-slate-800 pb-2">
+          <h3 class="text-xs font-bold text-white uppercase tracking-wider flex items-center gap-1.5">
+            <i data-lucide="clipboard-list" class="w-4 h-4 text-amber-400"></i>
+            <span>Mis Pedidos Realizados (<span id="misPedidosCount">0</span>)</span>
+          </h3>
+          <span class="text-[10px] text-slate-500 font-mono">Solo tuyos</span>
+        </div>
+
+        <div id="misPedidosList" class="space-y-2.5 max-h-[360px] overflow-y-auto"></div>
+      </div>
+    </section>
+
+    <!-- VIEW 3: FACTURAS / VENTAS CONCRETADAS -->
+    <section id="viewFacturas" class="space-y-3.5 hidden">
+      <div class="relative">
+        <i data-lucide="search" class="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400"></i>
+        <input type="text" id="searchFacturas" oninput="filtrarFacturas()" placeholder="Buscar por cliente o factura..." 
+          class="w-full pl-10 pr-4 py-2.5 bg-slate-900 border border-slate-700/80 rounded-2xl text-sm text-white placeholder-slate-400 focus:outline-none focus:border-amber-500 transition-all shadow-inner">
+      </div>
+
+      <div class="p-2.5 bg-slate-900/90 border border-slate-800 rounded-2xl flex items-center justify-between text-xs">
+        <div class="flex items-center gap-2">
+          <span class="w-2 h-2 rounded-full bg-emerald-400"></span>
+          <span class="text-slate-400">Facturas de mis pedidos:</span>
+          <span id="facturasCountBadge" class="font-bold text-amber-300 font-mono">0</span>
+        </div>
+        <span class="text-[10px] text-slate-500 font-mono">🧾 Facturadas por Carlos/Daniel</span>
+      </div>
+
+      <div id="misFacturasList" class="space-y-2.5"></div>
+    </section>
+
+    <!-- VIEW 4: COMISIONES (13%) -->
+    <section id="viewComision" class="space-y-3.5 hidden">
+      <!-- Tarjeta Principal de Comisión Acumulada -->
+      <div class="bg-gradient-to-br from-emerald-950/70 via-slate-900 to-slate-950 border border-emerald-500/40 rounded-3xl p-4 shadow-xl space-y-3">
+        <div class="flex items-center justify-between border-b border-emerald-500/20 pb-2.5">
+          <div class="flex items-center gap-2">
+            <div class="p-2 rounded-xl bg-emerald-500/20 text-emerald-300">
+              <i data-lucide="badge-percent" class="w-5 h-5"></i>
+            </div>
+            <div>
+              <h2 class="text-xs font-bold text-white uppercase tracking-wider">Mis Comisiones</h2>
+              <span class="text-[10px] text-emerald-400/90 font-mono">13% sobre ventas facturadas</span>
+            </div>
+          </div>
+          <span class="text-[10px] font-mono font-bold px-2 py-0.5 rounded-full bg-emerald-900/60 border border-emerald-500/30 text-emerald-300">
+            13% Ganancia
+          </span>
+        </div>
+
+        <div class="p-3.5 bg-slate-950/80 rounded-2xl border border-slate-800 font-mono space-y-1">
+          <span class="text-[10px] text-slate-400 block font-sans uppercase font-bold">Total Comisión Acumulada:</span>
+          <div class="flex items-baseline gap-2">
+            <span class="text-2xl font-black text-emerald-400" id="comisionTotalCRC">₡0</span>
+            <span class="text-xs text-slate-400" id="comisionTotalUSD">($0.00 USD)</span>
+          </div>
+          <div class="pt-2 border-t border-slate-800/80 grid grid-cols-2 gap-2 text-[11px] text-slate-300">
+            <div>
+              <span class="text-[10px] text-slate-400 block font-sans">Venta Facturada:</span>
+              <b class="text-white" id="comisionVentasCRC">₡0</b>
+            </div>
+            <div class="text-right">
+              <span class="text-[10px] text-slate-400 block font-sans">Volumen:</span>
+              <span class="text-amber-300 font-bold" id="comisionVolumenResumen">0 facturas</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Filtros de Período -->
+        <div class="flex gap-1.5 overflow-x-auto pb-0.5 no-scrollbar text-xs font-medium font-mono">
+          <button onclick="filtrarPeriodoComision('todos')" id="btnPeriodo-todos" class="px-3 py-1.5 rounded-xl bg-emerald-500 text-slate-950 font-bold text-[11px] transition-all">Todos</button>
+          <button onclick="filtrarPeriodoComision('mes')" id="btnPeriodo-mes" class="px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 font-medium text-[11px] transition-all">Este Mes</button>
+          <button onclick="filtrarPeriodoComision('semana')" id="btnPeriodo-semana" class="px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 font-medium text-[11px] transition-all">Esta Semana</button>
+          <button onclick="filtrarPeriodoComision('hoy')" id="btnPeriodo-hoy" class="px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 font-medium text-[11px] transition-all">Hoy</button>
+        </div>
+      </div>
+
+      <!-- Detalle por Venta -->
+      <div class="bg-slate-900/80 border border-slate-800 rounded-3xl p-4 space-y-3 shadow-lg">
+        <div class="flex items-center justify-between border-b border-slate-800 pb-2">
+          <h3 class="text-xs font-bold text-white uppercase tracking-wider flex items-center gap-1.5">
+            <i data-lucide="coins" class="w-4 h-4 text-emerald-400"></i>
+            <span>Desglose por Factura (<span id="comisionFacturasCount">0</span>)</span>
+          </h3>
+          <span class="text-[10px] text-slate-500 font-mono">Base 13%</span>
+        </div>
+
+        <div id="comisionDesgloseList" class="space-y-2.5 max-h-[420px] overflow-y-auto"></div>
+      </div>
+    </section>
+
+    <!-- VIEW 5: CLIENTES -->
+    <section id="viewClientes" class="space-y-3.5 hidden">
+      <div class="flex items-center gap-2">
+        <div class="relative flex-1">
+          <i data-lucide="search" class="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400"></i>
+          <input type="text" id="searchClientes" oninput="filtrarClientes()" placeholder="Buscar en mis clientes..." 
+            class="w-full pl-10 pr-4 py-2.5 bg-slate-900 border border-slate-700/80 rounded-2xl text-sm text-white placeholder-slate-400 focus:outline-none focus:border-amber-500 transition-all shadow-inner">
+        </div>
+        <button onclick="abrirModalNuevoCliente()" class="px-3.5 py-2.5 bg-amber-600 hover:bg-amber-500 active:scale-95 text-slate-950 rounded-2xl font-bold text-xs flex items-center gap-1.5 shadow-lg shadow-amber-500/20 transition-all shrink-0">
+          <i data-lucide="user-plus" class="w-4 h-4"></i>
+          <span>+ Cliente</span>
+        </button>
+      </div>
+
+      <div class="p-2.5 bg-slate-900/90 border border-slate-800 rounded-2xl flex items-center justify-between text-xs">
+        <div class="flex items-center gap-2">
+          <span class="w-2 h-2 rounded-full bg-emerald-400"></span>
+          <span class="text-slate-400">Vendedor:</span>
+          <span id="clientesVendedorBadge" class="font-bold text-amber-300 font-mono">Mi Perfil</span>
+        </div>
+        <span class="text-[10px] text-slate-500 font-mono">🔒 Cartera privada</span>
+      </div>
+
+      <div id="misClientesList" class="space-y-2.5"></div>
+    </section>
+
+  </main>
+
+  <!-- BOTTOM NAVIGATION BAR -->
+  <nav class="fixed bottom-0 left-0 right-0 z-40 bg-slate-900/95 backdrop-blur-md border-t border-slate-800/90 max-w-md mx-auto px-2 py-2">
+    <div class="grid grid-cols-5 gap-0.5 text-[10px] font-bold font-mono">
+      <button onclick="cambiarVista('productos')" id="navTab-productos" class="nav-item active flex flex-col items-center justify-center py-1.5 rounded-xl transition-all">
+        <i data-lucide="wine" class="w-4 h-4 mb-0.5"></i>
+        <span>Catálogo</span>
+      </button>
+
+      <button onclick="cambiarVista('pedidos')" id="navTab-pedidos" class="nav-item flex flex-col items-center justify-center py-1.5 rounded-xl transition-all relative">
+        <i data-lucide="shopping-bag" class="w-4 h-4 mb-0.5"></i>
+        <span>Pedidos</span>
+        <span id="navPedidosBadge" class="hidden absolute top-1 right-2 w-2 h-2 rounded-full bg-amber-400 animate-pulse"></span>
+      </button>
+
+      <button onclick="cambiarVista('facturas')" id="navTab-facturas" class="nav-item flex flex-col items-center justify-center py-1.5 rounded-xl transition-all">
+        <i data-lucide="receipt" class="w-4 h-4 mb-0.5"></i>
+        <span>Facturas</span>
+      </button>
+
+      <button onclick="cambiarVista('comision')" id="navTab-comision" class="nav-item flex flex-col items-center justify-center py-1.5 rounded-xl transition-all">
+        <i data-lucide="badge-percent" class="w-4 h-4 mb-0.5"></i>
+        <span>Comisión</span>
+      </button>
+
+      <button onclick="cambiarVista('clientes')" id="navTab-clientes" class="nav-item flex flex-col items-center justify-center py-1.5 rounded-xl transition-all">
+        <i data-lucide="users" class="w-4 h-4 mb-0.5"></i>
+        <span>Clientes</span>
+      </button>
+    </div>
+  </nav>
+
+  <!-- MODAL: VENDEDOR -->
+  <div id="modalVendedor" class="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm hidden items-center justify-center p-4">
+    <div class="bg-slate-900 border border-amber-500/40 rounded-3xl p-5 w-full max-w-sm space-y-4 shadow-2xl">
+      <div class="flex items-center justify-between border-b border-slate-800 pb-2.5">
+        <div class="flex items-center gap-2">
+          <i data-lucide="user-check" class="w-5 h-5 text-amber-400"></i>
+          <h3 class="text-sm font-bold text-white uppercase tracking-wider">Identificación de Vendedor</h3>
+        </div>
+        <button onclick="cerrarModalVendedor()" id="btnCerrarModalVendedor" class="text-slate-400 hover:text-white text-sm font-bold">✕</button>
+      </div>
+
+      <p class="text-xs text-slate-300 leading-relaxed">
+        Ingresa tu nombre o código de colaborador. Los clientes y pedidos que crees quedarán registrados bajo tu cuenta en el sistema central.
+      </p>
+
+      <div class="space-y-1">
+        <label class="block text-xs font-semibold text-slate-400">Nombre de Vendedor / Colaborador *</label>
+        <input type="text" id="inputNombreVendedor" placeholder="Ej: Vendedor Norte / María" 
+          class="w-full px-3 py-2.5 bg-slate-950 border border-slate-700 rounded-xl text-sm text-white focus:outline-none focus:border-amber-500">
+      </div>
+
+      <button onclick="guardarNombreVendedor()" class="w-full py-3 bg-amber-500 hover:bg-amber-400 text-slate-950 font-black rounded-xl text-xs uppercase tracking-wider active:scale-95 transition-all shadow-md">
+        Guardar y Continuar
+      </button>
+    </div>
+  </div>
+
+  <!-- MODAL: CLIENTE -->
+  <div id="modalCliente" class="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm hidden items-center justify-center p-4">
+    <div class="bg-slate-900 border border-amber-500/40 rounded-3xl p-5 w-full max-w-sm space-y-4 shadow-2xl">
+      <div class="flex items-center justify-between border-b border-slate-800 pb-2.5">
+        <div class="flex items-center gap-2">
+          <i data-lucide="user-plus" class="w-5 h-5 text-amber-400"></i>
+          <h3 class="text-sm font-bold text-white uppercase tracking-wider" id="modalClienteTitulo">Nuevo Cliente</h3>
+        </div>
+        <button onclick="cerrarModalCliente()" class="text-slate-400 hover:text-white text-sm font-bold">✕</button>
+      </div>
+
+      <input type="hidden" id="modalClienteId">
+
+      <div class="space-y-3 text-xs">
+        <div>
+          <label class="block font-semibold text-slate-300 mb-1">Nombre Completo *</label>
+          <input type="text" id="modalClienteNombre" placeholder="Ej. Juan Pérez" 
+            class="w-full px-3 py-2.5 bg-slate-950 border border-slate-700 rounded-xl text-white text-xs focus:outline-none focus:border-amber-500">
+        </div>
+
+        <div>
+          <label class="block font-semibold text-slate-300 mb-1">Teléfono (WhatsApp) *</label>
+          <input type="tel" id="modalClienteTelefono" placeholder="Ej. 8888-8888" 
+            class="w-full px-3 py-2.5 bg-slate-950 border border-slate-700 rounded-xl text-white font-mono text-xs focus:outline-none focus:border-amber-500">
+        </div>
+      </div>
+
+      <div class="pt-2 flex items-center gap-2">
+        <button onclick="cerrarModalCliente()" class="flex-1 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold rounded-xl text-xs active:scale-95 transition-all">
+          Cancelar
+        </button>
+        <button onclick="guardarClienteForm()" class="flex-1 py-2.5 bg-amber-500 hover:bg-amber-400 text-slate-950 font-black rounded-xl text-xs active:scale-95 transition-all shadow-md">
+          Guardar Cliente
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: CONFIGURACIÓN SHEETS -->
+  <div id="modalConfig" class="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm hidden items-center justify-center p-4">
+    <div class="bg-slate-900 border border-amber-500/40 rounded-3xl p-5 w-full max-w-sm space-y-4 shadow-2xl">
+      <div class="flex items-center justify-between border-b border-slate-800 pb-2.5">
+        <div class="flex items-center gap-2">
+          <i data-lucide="link-2" class="w-5 h-5 text-amber-400"></i>
+          <h3 class="text-sm font-bold text-white uppercase tracking-wider">Conexión con Sheets</h3>
+        </div>
+        <button onclick="cerrarModalConfig()" class="text-slate-400 hover:text-white text-sm font-bold">✕</button>
+      </div>
+
+      <p class="text-xs text-slate-300 leading-relaxed">
+        Enlace de la Web App de Google Apps Script para sincronizar catálogo, pedidos y clientes.
+      </p>
+
+      <div class="space-y-3 text-xs">
+        <div>
+          <label class="block font-semibold text-slate-400 mb-1">URL de Google Apps Script</label>
+          <input type="text" id="configSheetsUrl" placeholder="https://script.google.com/macros/s/.../exec" 
+            class="w-full px-3 py-2 bg-slate-950 border border-slate-700 rounded-xl text-white font-mono text-[11px] focus:outline-none focus:border-amber-500">
+        </div>
+
+        <div>
+          <label class="block font-semibold text-slate-400 mb-1">Tipo de Cambio de Referencia (₡)</label>
+          <input type="number" id="configTipoCambio" value="520" 
+            class="w-full px-3 py-2 bg-slate-950 border border-slate-700 rounded-xl text-white font-mono text-xs focus:outline-none focus:border-amber-500">
+        </div>
+      </div>
+
+      <div class="space-y-2 pt-1 border-t border-slate-800">
+        <button onclick="guardarConfiguracionForm()" class="w-full py-3 bg-amber-500 hover:bg-amber-400 text-slate-950 font-black rounded-xl text-xs uppercase tracking-wider active:scale-95 transition-all shadow-md">
+          Guardar Configuración
+        </button>
+
+        <!-- Botón Especial: Vaciar Caché y Actualizar App -->
+        <button onclick="forzarActualizacionApp()" class="w-full py-2.5 bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white font-bold rounded-xl shadow-lg shadow-cyan-600/25 active:scale-95 transition-all flex items-center justify-center gap-2 text-xs">
+          <i data-lucide="refresh-cw" class="w-4 h-4"></i>
+          <span>Vaciar Caché y Actualizar App</span>
+        </button>
+        <p class="text-[10px] text-slate-400 leading-tight text-center">
+          💡 Úsalo si no ves los últimos cambios o botones nuevos. Elimina archivos guardados en caché y recarga la versión más reciente.
+        </p>
+
+        <!-- Botón Borrar Local -->
+        <button onclick="limpiarCacheLocal()" class="w-full py-2 bg-rose-950/40 hover:bg-rose-900/50 border border-rose-800/50 text-rose-300 rounded-xl font-semibold active:scale-95 transition-all flex items-center justify-center gap-1.5 text-xs">
+          <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+          <span>Borrar Datos Locales y Recargar</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <script src="app.js?v=20260908_06"></script>
+</body>
+</html>
