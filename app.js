@@ -22,6 +22,114 @@ const parseNum = (val, fallback = 0) => {
 
 const PORTAL_TOKEN = "DCDestape2026TabernaVIP!";
 
+// Helper para formatear URLs de imágenes (Google Drive, lh3, thumbnail, base64 o web directa)
+function formatearUrlImagen(urlOrId) {
+  if (!urlOrId || typeof urlOrId !== 'string') return '';
+  const trimmed = urlOrId.trim();
+  if (!trimmed) return '';
+
+  // 1. Data URLs directas (Base64)
+  if (trimmed.startsWith('data:image/')) {
+    return trimmed;
+  }
+
+  // 2. Extraer ID de Google Drive (varios formatos conocidos)
+  let driveId = null;
+
+  // Formato /file/d/ID/view o /file/d/ID
+  const matchFileD = trimmed.match(/\/file\/d\/([a-zA-Z0-9_-]+)/);
+  if (matchFileD && matchFileD[1]) driveId = matchFileD[1];
+
+  // Formato id=ID o ?id=ID
+  if (!driveId) {
+    const matchIdParam = trimmed.match(/[?&]id=([a-zA-Z0-9_-]+)/);
+    if (matchIdParam && matchIdParam[1]) driveId = matchIdParam[1];
+  }
+
+  // Formato lh3.googleusercontent.com/d/ID
+  if (!driveId) {
+    const matchGoogleUserContent = trimmed.match(/googleusercontent\.com\/d\/([a-zA-Z0-9_-]+)/);
+    if (matchGoogleUserContent && matchGoogleUserContent[1]) driveId = matchGoogleUserContent[1];
+  }
+
+  // Formato drive.google.com/open?id=ID o /uc?id=ID
+  if (!driveId) {
+    const matchUc = trimmed.match(/drive\.google\.com\/(?:uc|open)\?.*id=([a-zA-Z0-9_-]+)/);
+    if (matchUc && matchUc[1]) driveId = matchUc[1];
+  }
+
+  // Si pegó directamente el ID alfanumérico de Drive (25 a 50 caracteres)
+  if (!driveId && /^[a-zA-Z0-9_-]{25,50}$/.test(trimmed)) {
+    driveId = trimmed;
+  }
+
+  if (driveId) {
+    // drive.google.com/thumbnail?id=ID&sz=w600 funciona en móvil y escritorio sin restricciones CORS
+    return `https://drive.google.com/thumbnail?id=${driveId}&sz=w600`;
+  }
+
+  // 3. URLs web directas (http/https)
+  if (trimmed.startsWith('http://') || trimmed.startsWith('https://')) {
+    return trimmed;
+  }
+
+  return trimmed;
+}
+
+// Visor de foto en pantalla completa (Lightbox)
+function abrirFotoCompleta(url, nombre) {
+  const modal = document.getElementById("modalFotoCompleta");
+  const img = document.getElementById("modalFotoImg");
+  const titulo = document.getElementById("modalFotoTitulo");
+  if (!modal || !img) return;
+
+  if (!url) {
+    mostrarToast("Este licor no tiene foto asignada", "info");
+    return;
+  }
+
+  img.onerror = function() {
+    this.onerror = null;
+    const idMatch = this.src.match(/[?&]id=([a-zA-Z0-9_-]+)/);
+    if (idMatch) {
+      this.src = `https://drive.google.com/thumbnail?id=${idMatch[1]}&sz=w1200`;
+    } else {
+      this.style.display = 'none';
+    }
+  };
+
+  img.src = "";
+  img.style.display = "";
+  img.src = formatearUrlImagen(url);
+  img.alt = nombre || "Licor";
+
+  if (titulo) {
+    titulo.textContent = nombre || "Producto";
+  }
+
+  modal.classList.remove("hidden", "opacity-0", "pointer-events-none");
+  modal.classList.add("flex", "opacity-100");
+  inicializarIconos();
+  document.body.style.overflow = "hidden";
+}
+
+function cerrarFotoCompleta() {
+  const modal = document.getElementById("modalFotoCompleta");
+  if (!modal) return;
+  modal.classList.add("opacity-0", "pointer-events-none");
+  modal.classList.remove("opacity-100");
+  setTimeout(() => {
+    modal.classList.add("hidden");
+    modal.classList.remove("flex");
+  }, 200);
+  document.body.style.overflow = "";
+}
+
+// Cerrar con tecla Escape
+document.addEventListener("keydown", (e) => {
+  if (e.key === "Escape") cerrarFotoCompleta();
+});
+
 // Estado Global
 let state = {
   vendedor: "Colaborador",
@@ -517,38 +625,64 @@ function renderizarProductos() {
   cont.innerHTML = prods.map(p => {
     const pCRC = parseNum(p.precioVentaCRC, 0);
     const pUSD = parseNum(p.precioVentaUSD, 0);
-    const imgHtml = p.imagenUrl 
-      ? `<img src="${p.imagenUrl}" alt="${p.nombre}" class="w-14 h-14 object-cover rounded-2xl bg-slate-800 border border-slate-700">`
-      : `<div class="w-14 h-14 rounded-2xl bg-slate-800 border border-slate-700 flex items-center justify-center text-xl">🍷</div>`;
+    const imgUrlFormatted = formatearUrlImagen(p.imagenUrl);
 
     // Cantidad ya presente en el pedido actual si existe
     const enPedido = state.pedidoCarrito.find(it => it.codigo === p.codigo);
     const cantEnPedido = enPedido ? enPedido.cantidad : 0;
 
+    const imgHtml = imgUrlFormatted
+      ? `
+        <div onclick="abrirFotoCompleta('${imgUrlFormatted}', '${p.nombre.replace(/'/g, "\\'")}')" class="relative w-24 h-24 sm:w-28 sm:h-28 rounded-2xl overflow-hidden bg-slate-950 border border-slate-700/80 shadow-inner shrink-0 cursor-pointer group">
+          <img src="${imgUrlFormatted}" alt="${p.nombre}" 
+            onerror="this.onerror=null; const m=this.src.match(/[?&]id=([a-zA-Z0-9_-]+)/); if(m){this.src='https://drive.google.com/thumbnail?id='+m[1]+'&sz=w800';}else{this.parentElement.innerHTML='<div class=\\'w-full h-full flex items-center justify-center text-2xl\\'>🍷</div>';}"
+            class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300">
+          <div class="absolute inset-0 bg-black/0 group-hover:bg-black/20 flex items-center justify-center transition-colors">
+            <span class="opacity-0 group-hover:opacity-100 bg-black/60 text-white rounded-full p-1 text-[10px] transition-opacity">
+              <i data-lucide="zoom-in" class="w-3.5 h-3.5"></i>
+            </span>
+          </div>
+          <span class="absolute bottom-1 right-1 bg-black/70 text-[9px] text-amber-300 font-mono px-1 rounded backdrop-blur-xs">🔍 Ver</span>
+        </div>
+      `
+      : `
+        <div class="w-24 h-24 sm:w-28 sm:h-28 rounded-2xl bg-gradient-to-br from-slate-900 to-slate-950 border border-slate-800 flex flex-col items-center justify-center text-slate-500 shrink-0">
+          <span class="text-3xl mb-0.5">🍷</span>
+          <span class="text-[9px] text-slate-500 font-mono font-medium">Sin foto</span>
+        </div>
+      `;
+
     return `
-      <div class="bg-slate-900/90 border border-slate-800/90 rounded-2xl p-3 flex items-center justify-between gap-3 shadow-md hover:border-slate-700 transition-all">
-        <div class="flex items-center gap-3 min-w-0 flex-1">
-          ${imgHtml}
-          <div class="min-w-0 flex-1">
-            <span class="text-[9.5px] font-bold uppercase tracking-wider text-amber-400/90 font-mono block truncate">${p.categoria || 'Licor'}</span>
-            <h3 class="text-xs font-bold text-white leading-snug truncate">${p.nombre || p.codigo}</h3>
-            <div class="flex items-center gap-2 mt-1 font-mono">
-              <span class="text-xs font-black text-emerald-400">${fmtCRC(pCRC)}</span>
-              ${pUSD > 0 ? `<span class="text-[10.5px] text-slate-400">(${fmtUSD(pUSD)})</span>` : ''}
+      <div class="bg-slate-900/90 border border-slate-800/90 hover:border-amber-500/40 rounded-3xl p-3 flex gap-3 shadow-md hover:shadow-xl transition-all">
+        ${imgHtml}
+
+        <div class="min-w-0 flex-1 flex flex-col justify-between py-0.5">
+          <div>
+            <div class="flex items-center justify-between gap-1 mb-0.5">
+              <span class="text-[9.5px] font-bold uppercase tracking-wider text-amber-400/90 font-mono block truncate">${p.categoria || 'Licor'}</span>
+              <span class="text-[9px] text-slate-500 font-mono shrink-0">${p.codigo}</span>
+            </div>
+            <h3 class="text-sm font-bold text-white leading-snug line-clamp-2">${p.nombre || p.codigo}</h3>
+          </div>
+
+          <div class="mt-2 pt-2 border-t border-slate-800/80 flex items-center justify-between gap-2">
+            <div class="font-mono">
+              <span class="text-sm font-black text-emerald-400 block leading-none">${fmtCRC(pCRC)}</span>
+              ${pUSD > 0 ? `<span class="text-[10px] text-slate-400 leading-none">(${fmtUSD(pUSD)})</span>` : ''}
+            </div>
+
+            <div class="flex items-center gap-1.5 shrink-0">
+              ${cantEnPedido > 0 ? `
+                <span class="text-[10px] font-mono font-bold text-amber-300 bg-amber-950/80 border border-amber-500/40 px-2 py-1 rounded-xl">
+                  ${cantEnPedido}x
+                </span>
+              ` : ''}
+              <button onclick="agregarAlPedidoDesdeCatalogo('${p.codigo}')" class="px-3.5 py-2 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 font-black rounded-xl text-xs flex items-center gap-1 active:scale-95 transition-all shadow-md shadow-amber-500/20">
+                <i data-lucide="plus" class="w-3.5 h-3.5"></i>
+                <span>Pedir</span>
+              </button>
             </div>
           </div>
-        </div>
-
-        <div class="flex flex-col items-end gap-1.5 shrink-0">
-          <button onclick="agregarAlPedidoDesdeCatalogo('${p.codigo}')" class="px-3 py-2 bg-amber-500 hover:bg-amber-400 text-slate-950 font-black rounded-xl text-xs flex items-center gap-1 active:scale-95 transition-all shadow-md">
-            <i data-lucide="plus" class="w-3.5 h-3.5"></i>
-            <span>Pedir</span>
-          </button>
-          ${cantEnPedido > 0 ? `
-            <span class="text-[9.5px] font-mono font-bold text-amber-300 bg-amber-950/80 border border-amber-500/40 px-1.5 py-0.2 rounded-md">
-              ${cantEnPedido} en encargo
-            </span>
-          ` : ''}
         </div>
       </div>
     `;
@@ -615,6 +749,7 @@ function agregarAlPedidoDesdeCatalogo(codigo) {
     state.pedidoCarrito.push({
       codigo: p.codigo,
       nombre: p.nombre || p.codigo,
+      imagenUrl: p.imagenUrl || "",
       cantidad: 1,
       precioVentaCRC: parseNum(p.precioVentaCRC, 0),
       precioVentaUSD: parseNum(p.precioVentaUSD, 0)
@@ -691,11 +826,19 @@ function renderizarItemsPedidoActual() {
     const subCRC = it.cantidad * it.precioVentaCRC;
     totalMontoCRC += subCRC;
 
+    const imgUrlFormateada = formatearUrlImagen(it.imagenUrl);
+    const imgHtml = imgUrlFormateada 
+      ? `<img src="${imgUrlFormateada}" alt="${it.nombre}" class="w-12 h-12 rounded-xl object-cover border border-slate-700/80 bg-slate-900 shrink-0 cursor-pointer" onclick="abrirFotoCompleta('${imgUrlFormateada}', '${it.nombre.replace(/'/g, "\\'")}')" onerror="this.onerror=null; this.parentElement.innerHTML='<div class=\\'w-12 h-12 rounded-xl bg-slate-800 border border-slate-700 flex items-center justify-center text-slate-500 shrink-0\\'>🍾</div>';">`
+      : `<div class="w-12 h-12 rounded-xl bg-slate-800 border border-slate-700 flex items-center justify-center text-slate-500 shrink-0 text-base">🍾</div>`;
+
     return `
-      <div class="bg-slate-950/80 border border-slate-800 rounded-xl p-2.5 flex items-center justify-between gap-2">
-        <div class="min-w-0 flex-1">
-          <h4 class="text-xs font-bold text-white truncate">${it.nombre}</h4>
-          <span class="text-[11px] font-mono text-emerald-400 font-bold">${fmtCRC(subCRC)}</span>
+      <div class="bg-slate-950/80 border border-slate-800 rounded-xl p-2.5 flex items-center justify-between gap-2.5">
+        <div class="flex items-center gap-2.5 min-w-0 flex-1">
+          ${imgHtml}
+          <div class="min-w-0 flex-1">
+            <h4 class="text-xs font-bold text-white truncate">${it.nombre}</h4>
+            <span class="text-[11px] font-mono text-emerald-400 font-bold">${fmtCRC(subCRC)}</span>
+          </div>
         </div>
 
         <div class="flex items-center gap-1.5 shrink-0 font-mono">
@@ -833,21 +976,31 @@ function buscarProductosParaPedido(query) {
     const pUSD = parseNum(p.precioVentaUSD, 0);
     const yaEnCarrito = (state.pedidoCarrito || []).find(it => it.codigo === p.codigo);
     const cantYa = yaEnCarrito ? yaEnCarrito.cantidad : 0;
+    const imgUrlFormatted = formatearUrlImagen(p.imagenUrl);
+
+    const miniImg = imgUrlFormatted
+      ? `<img src="${imgUrlFormatted}" alt="${p.nombre}" 
+          onerror="this.onerror=null; const m=this.src.match(/[?&]id=([a-zA-Z0-9_-]+)/); if(m){this.src='https://drive.google.com/thumbnail?id='+m[1]+'&sz=w400';}else{this.style.display='none';}" 
+          class="w-11 h-11 rounded-xl object-cover bg-slate-950 border border-slate-700/80 shrink-0">`
+      : `<div class="w-11 h-11 rounded-xl bg-slate-950 border border-slate-800 flex items-center justify-center text-base shrink-0">🍷</div>`;
 
     return `
-      <div onclick="seleccionarProductoParaPedido('${p.codigo}')" class="p-2.5 hover:bg-slate-800/80 cursor-pointer flex items-center justify-between gap-2.5 transition-colors">
-        <div class="min-w-0 flex-1">
-          <div class="flex items-center gap-1.5">
-            <span class="text-xs font-bold text-white truncate">${p.nombre}</span>
-            ${cantYa > 0 ? `<span class="text-[10px] px-1.5 py-0.2 rounded-full bg-amber-500/20 text-amber-300 font-mono font-bold">${cantYa} en pedido</span>` : ''}
-          </div>
-          <div class="text-[10px] text-slate-400 font-mono mt-0.5">
-            ${p.codigo} • ${p.categoria || 'General'}
+      <div onclick="seleccionarProductoParaPedido('${p.codigo}')" class="p-2.5 hover:bg-slate-800/80 cursor-pointer flex items-center justify-between gap-3 transition-colors">
+        <div class="flex items-center gap-2.5 min-w-0 flex-1">
+          ${miniImg}
+          <div class="min-w-0 flex-1">
+            <div class="flex items-center gap-1.5 flex-wrap">
+              <span class="text-xs font-bold text-white truncate">${p.nombre}</span>
+              ${cantYa > 0 ? `<span class="text-[10px] px-1.5 py-0.2 rounded-full bg-amber-500/20 text-amber-300 font-mono font-bold">${cantYa} en pedido</span>` : ''}
+            </div>
+            <div class="text-[10px] text-slate-400 font-mono mt-0.5">
+              ${p.codigo} • ${p.categoria || 'General'}
+            </div>
           </div>
         </div>
-        <div class="text-right shrink-0">
-          <span class="text-xs font-bold text-emerald-400 font-mono block">${fmtCRC(pCRC)}</span>
-          <span class="text-[10px] text-slate-400 font-mono">${fmtUSD(pUSD)}</span>
+        <div class="text-right shrink-0 font-mono">
+          <span class="text-xs font-bold text-emerald-400 block">${fmtCRC(pCRC)}</span>
+          ${pUSD > 0 ? `<span class="text-[10px] text-slate-400">(${fmtUSD(pUSD)})</span>` : ''}
         </div>
       </div>
     `;
@@ -867,6 +1020,7 @@ function seleccionarProductoParaPedido(codigo) {
     state.pedidoCarrito.push({
       codigo: p.codigo,
       nombre: p.nombre || p.codigo,
+      imagenUrl: p.imagenUrl || "",
       cantidad: 1,
       precioVentaCRC: parseNum(p.precioVentaCRC, 0),
       precioVentaUSD: parseNum(p.precioVentaUSD, 0)

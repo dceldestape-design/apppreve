@@ -468,6 +468,30 @@
     </div>
   </div>
 
-  <script src="app.js?v=20260908_06"></script>
+  <!-- MODAL: Ver Foto Completa / Lightbox de Producto -->
+  <div id="modalFotoCompleta" class="fixed inset-0 z-50 bg-slate-950/90 backdrop-blur-md hidden flex flex-col items-center justify-center p-4 transition-all duration-300 opacity-0 pointer-events-none">
+    <div class="relative max-w-sm w-full bg-slate-900 border border-slate-800 rounded-3xl p-4 shadow-2xl flex flex-col items-center overflow-hidden">
+      <!-- Botón Cerrar -->
+      <button onclick="cerrarFotoCompleta()" class="absolute top-3 right-3 z-10 w-9 h-9 rounded-full bg-slate-800/90 text-slate-300 hover:text-white hover:bg-slate-700 flex items-center justify-center text-sm shadow-md transition-all active:scale-90">
+        ✕
+      </button>
+      
+      <!-- Título de Producto -->
+      <h3 id="modalFotoTitulo" class="text-sm font-bold text-white text-center mb-3 pr-8 pl-2 line-clamp-2 leading-tight">
+        Producto
+      </h3>
+
+      <!-- Contenedor Imagen -->
+      <div class="w-full h-80 sm:h-96 rounded-2xl bg-slate-950/70 border border-slate-800 flex items-center justify-center p-2 overflow-hidden">
+        <img id="modalFotoImg" src="" alt="Foto de Producto" class="max-w-full max-h-full object-contain rounded-xl drop-shadow-lg transition-transform duration-300 hover:scale-105">
+      </div>
+
+      <div class="mt-3 text-center">
+        <span class="text-[11px] text-slate-400 font-medium">Toque fuera o presione ✕ para cerrar</span>
+      </div>
+    </div>
+  </div>
+
+  <script src="app.js?v=20260910_01"></script>
 </body>
 </html>
