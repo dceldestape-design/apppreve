@@ -274,6 +274,25 @@ function cargarEstadoLocal() {
   const prods = localStorage.getItem("pv_productos");
   if (prods) {
     try { state.productos = JSON.parse(prods); } catch(e) { state.productos = []; }
+  } else {
+    const mainProds = localStorage.getItem("inv_productos_v2");
+    if (mainProds) {
+      try {
+        const parsed = JSON.parse(mainProds);
+        const list = Array.isArray(parsed) ? parsed : Object.values(parsed);
+        if (list.length > 0) {
+          state.productos = list.map(p => ({
+            codigo: String(p.codigo || "").trim(),
+            nombre: String(p.nombre || "").trim(),
+            categoria: String(p.categoria || "General").trim(),
+            precioVentaCRC: parseNum(p.precioVentaCRC, 0),
+            precioVentaUSD: parseNum(p.precioVentaUSD, 0),
+            imagenUrl: String(p.imagenUrl || p.imagen || "").trim()
+          }));
+          guardarProductosLocal();
+        }
+      } catch(e) {}
+    }
   }
 
   const cli = localStorage.getItem("pv_clientes");
@@ -620,13 +639,39 @@ function renderizarProductos() {
   if (countEl) countEl.textContent = prods.length;
 
   if (prods.length === 0) {
-    cont.innerHTML = `
-      <div class="text-center py-12 text-slate-500 bg-slate-900/60 rounded-3xl border border-slate-800 space-y-2">
-        <i data-lucide="wine" class="w-10 h-10 mx-auto text-slate-600 stroke-1"></i>
-        <p class="text-xs font-bold text-slate-400">${q ? "No se encontraron licores con esa búsqueda." : "No hay licores en el catálogo."}</p>
-        <p class="text-[11px] text-slate-500">Toca el botón 🔄 para sincronizar con la nube.</p>
-      </div>
-    `;
+    if (!state.config.sheetsUrl) {
+      cont.innerHTML = `
+        <div class="text-center py-10 px-4 bg-gradient-to-b from-slate-900/90 to-slate-950 border border-amber-500/30 rounded-3xl space-y-3 shadow-xl">
+          <div class="w-12 h-12 rounded-2xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center mx-auto text-amber-400">
+            <i data-lucide="link" class="w-6 h-6"></i>
+          </div>
+          <div>
+            <h3 class="text-sm font-bold text-white">Vincular con Google Sheets</h3>
+            <p class="text-xs text-slate-400 mt-1 max-w-xs mx-auto">Conecta la URL de Google Apps Script para descargar el catálogo de licores y sincronizar pedidos.</p>
+          </div>
+          <button onclick="abrirModalConfig()" class="px-5 py-2.5 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 font-black text-xs rounded-xl shadow-lg shadow-amber-500/20 active:scale-95 transition-all inline-flex items-center gap-2">
+            <i data-lucide="settings" class="w-4 h-4"></i>
+            <span>Configurar Enlace de Sheets</span>
+          </button>
+        </div>
+      `;
+    } else {
+      cont.innerHTML = `
+        <div class="text-center py-10 px-4 bg-slate-900/60 rounded-3xl border border-slate-800 space-y-3">
+          <i data-lucide="wine" class="w-10 h-10 mx-auto text-amber-400/60 stroke-1"></i>
+          <div>
+            <p class="text-xs font-bold text-slate-300">${q ? "No se encontraron licores con esa búsqueda." : "Catálogo listo para sincronizar."}</p>
+            <p class="text-[11px] text-slate-400 mt-0.5">${q ? "Intenta con otro término o borra el filtro." : "Presiona el botón para descargar los licores y precios desde la nube."}</p>
+          </div>
+          ${!q ? `
+            <button onclick="sincronizarConSheets(true)" class="px-4 py-2 bg-amber-500/20 hover:bg-amber-500/30 border border-amber-500/40 text-amber-300 font-bold text-xs rounded-xl active:scale-95 transition-all inline-flex items-center gap-1.5">
+              <i data-lucide="refresh-cw" class="w-3.5 h-3.5"></i>
+              <span>Sincronizar Licores Ahora</span>
+            </button>
+          ` : ''}
+        </div>
+      `;
+    }
     inicializarIconos();
     return;
   }
@@ -1570,9 +1615,6 @@ function renderizarComisiones() {
       }).join("");
     }
   }
-
-  inicializarIconos();
-}
 
   inicializarIconos();
 }
