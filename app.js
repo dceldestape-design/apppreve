@@ -156,6 +156,7 @@ let state = {
   // Comisiones
   filtroPeriodoComision: "todos",
   porcentajeComision: 13,
+  liquidaciones: [], // Liquidaciones pagadas por Carlos/Daniel
   
   config: {
     sheetsUrl: "",
@@ -290,6 +291,11 @@ function cargarEstadoLocal() {
     try { state.facturas = JSON.parse(facts); } catch(e) { state.facturas = []; }
   }
 
+  const liqs = localStorage.getItem("pv_liquidaciones");
+  if (liqs) {
+    try { state.liquidaciones = JSON.parse(liqs); } catch(e) { state.liquidaciones = []; }
+  }
+
   const carr = localStorage.getItem("pv_carrito");
   if (carr) {
     try { state.pedidoCarrito = JSON.parse(carr); } catch(e) { state.pedidoCarrito = []; }
@@ -317,6 +323,9 @@ function guardarPedidosLocal() {
 }
 function guardarFacturasLocal() {
   localStorage.setItem("pv_facturas", JSON.stringify(state.facturas || []));
+}
+function guardarLiquidacionesLocal() {
+  localStorage.setItem("pv_liquidaciones", JSON.stringify(state.liquidaciones || []));
 }
 function guardarCarritoLocal() {
   localStorage.setItem("pv_carrito", JSON.stringify(state.pedidoCarrito));
@@ -1361,9 +1370,14 @@ function renderizarComisiones() {
   const elTotalCRC = document.getElementById("comisionTotalCRC");
   const elTotalUSD = document.getElementById("comisionTotalUSD");
   const elVentasCRC = document.getElementById("comisionVentasCRC");
+  const elLiquidadaCRC = document.getElementById("comisionLiquidadaCRC");
   const elVolumen = document.getElementById("comisionVolumenResumen");
   const elCount = document.getElementById("comisionFacturasCount");
+  const badgeStatus = document.getElementById("comisionStatusBadge");
   const cont = document.getElementById("comisionDesgloseList");
+  const contRecibos = document.getElementById("comisionRecibosList");
+  const countRecibos = document.getElementById("comisionRecibosCount");
+
   if (!elTotalCRC || !cont) return;
 
   const pct = (Number(state.porcentajeComision) || 13) / 100;
@@ -1380,7 +1394,7 @@ function renderizarComisiones() {
   // Inicio de mes
   const inicioMes = new Date(ahora.getFullYear(), ahora.getMonth(), 1).getTime();
 
-  // Filtrar facturas según período
+  // 1. Filtrar facturas según período
   let facturasFiltradas = (state.facturas || []).filter(f => {
     if (!f.fecha) return true;
     const t = new Date(f.fecha).getTime();
@@ -1402,77 +1416,163 @@ function renderizarComisiones() {
     (f.items || []).forEach(i => totalBotellas += parseNum(i.cantidad, 1));
   });
 
-  // Comisión al 13%
+  // Comisión generada total (13%)
   const comisionCRC = Math.round(totalVentasCRC * pct);
   const comisionUSD = totalVentasUSD > 0 ? (totalVentasUSD * pct) : (tc > 0 ? comisionCRC / tc : 0);
 
-  // Actualizar tarjeta superior
-  elTotalCRC.textContent = fmtCRC(comisionCRC);
-  elTotalUSD.textContent = `(${fmtUSD(comisionUSD)} USD)`;
-  elVentasCRC.textContent = fmtCRC(totalVentasCRC);
-  elVolumen.textContent = `${facturasFiltradas.length} factura(s) • ${totalBotellas} unids`;
+  // 2. Sumar liquidaciones pagadas por Carlos/Daniel
+  let totalLiquidadoCRC = 0;
+  let totalLiquidadoUSD = 0;
+  (state.liquidaciones || []).forEach(l => {
+    totalLiquidadoCRC += parseNum(l.montoCRC, 0);
+    totalLiquidadoUSD += parseNum(l.montoUSD, 0);
+  });
+
+  // 3. Saldo Pendiente Reducido por Liquidaciones
+  const saldoPendienteCRC = Math.max(0, comisionCRC - totalLiquidadoCRC);
+  const saldoPendienteUSD = Math.max(0, comisionUSD - totalLiquidadoUSD);
+
+  // Actualizar indicadores numéricos
+  elTotalCRC.textContent = fmtCRC(saldoPendienteCRC);
+  elTotalUSD.textContent = `(${fmtUSD(saldoPendienteUSD)} USD)`;
+  if (elVentasCRC) elVentasCRC.textContent = fmtCRC(comisionCRC);
+  if (elLiquidadaCRC) elLiquidadaCRC.textContent = fmtCRC(totalLiquidadoCRC);
+  if (elVolumen) elVolumen.textContent = `${facturasFiltradas.length} facturas • ${totalBotellas} unids`;
   if (elCount) elCount.textContent = facturasFiltradas.length;
 
+  if (badgeStatus) {
+    if (saldoPendienteCRC === 0 && comisionCRC > 0) {
+      badgeStatus.className = "text-[9.5px] px-2 py-0.5 rounded-full font-bold bg-emerald-950 text-emerald-300 border border-emerald-500/40";
+      badgeStatus.textContent = "✓ Al día (Liquidado)";
+      elTotalCRC.className = "text-2xl font-black text-emerald-400";
+    } else if (saldoPendienteCRC > 0) {
+      badgeStatus.className = "text-[9.5px] px-2 py-0.5 rounded-full font-bold bg-amber-950/80 text-amber-300 border border-amber-500/40";
+      badgeStatus.textContent = "⏳ Pendiente de cobro";
+      elTotalCRC.className = "text-2xl font-black text-amber-400";
+    } else {
+      badgeStatus.className = "text-[9.5px] px-2 py-0.5 rounded-full font-bold bg-slate-800 text-slate-400 border border-slate-700";
+      badgeStatus.textContent = "Sin comisiones";
+      elTotalCRC.className = "text-2xl font-black text-slate-400";
+    }
+  }
+
+  // 4. Desglose de Facturas con badge de estado
   if (facturasFiltradas.length === 0) {
     cont.innerHTML = `
       <div class="text-center py-10 text-slate-500 bg-slate-900/60 rounded-3xl border border-slate-800 space-y-2">
         <i data-lucide="badge-percent" class="w-10 h-10 mx-auto text-slate-600 stroke-1"></i>
-        <p class="text-xs font-bold text-slate-400">No hay comisiones en este período (${periodo}).</p>
+        <p class="text-xs font-bold text-slate-400">No hay facturas en este período (${periodo}).</p>
         <p class="text-[11px] text-slate-500 max-w-xs mx-auto">Tus comisiones del 13% se calculan automáticamente cuando Carlos o Daniel facturan tus pedidos.</p>
       </div>
     `;
-    inicializarIconos();
-    return;
+  } else {
+    // Determinar qué facturas ya están cubiertas por las liquidaciones
+    let acumComision = 0;
+    cont.innerHTML = facturasFiltradas.map(f => {
+      const fStr = f.fecha ? new Date(f.fecha).toLocaleDateString([], { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" }) : "S/F";
+      const vCRC = parseNum(f.totalCRC, 0);
+      const vUSD = parseNum(f.totalUSD, 0);
+      const comFilaCRC = Math.round(vCRC * pct);
+      const comFilaUSD = vUSD > 0 ? (vUSD * pct) : (tc > 0 ? comFilaCRC / tc : 0);
+      const botesFila = (f.items || []).reduce((acc, it) => acc + parseNum(it.cantidad, 1), 0);
+
+      acumComision += comFilaCRC;
+      const yaLiquidada = acumComision <= totalLiquidadoCRC;
+
+      return `
+        <div class="p-3.5 bg-slate-900/90 border ${yaLiquidada ? 'border-emerald-500/30' : 'border-amber-500/30'} rounded-2xl space-y-2.5 text-xs shadow-md">
+          <!-- Cabecera -->
+          <div class="flex items-center justify-between border-b border-slate-800/80 pb-2">
+            <div class="flex items-center gap-1.5">
+              <span class="font-mono font-bold text-amber-400 text-xs">${f.id}</span>
+              <span class="text-[10px] text-slate-400 font-mono">(${fStr})</span>
+            </div>
+            <span class="px-2 py-0.5 rounded-full text-[10px] font-bold ${yaLiquidada ? 'bg-emerald-950 text-emerald-300 border border-emerald-500/40' : 'bg-amber-950/80 text-amber-300 border border-amber-500/40'}">
+              ${yaLiquidada ? '✅ Liquidada' : '⏳ Pendiente'}
+            </span>
+          </div>
+
+          <!-- Cliente y Pedido -->
+          <div class="flex items-start justify-between gap-2">
+            <div>
+              <span class="text-xs font-bold text-white block">${f.cliente || "Cliente General"}</span>
+              <span class="text-[10px] text-sky-400 font-mono">📋 Pedido: ${f.pedidoOrigenId || 'N/A'}</span>
+            </div>
+            <div class="text-right shrink-0">
+              <span class="text-[10px] text-slate-400 block font-mono">Venta: <b>${fmtCRC(vCRC)}</b></span>
+              <span class="text-[10px] text-slate-500 font-mono">${botesFila} botella(s)</span>
+            </div>
+          </div>
+
+          <!-- Caja destacada de ganancia para el preventa -->
+          <div class="p-2.5 ${yaLiquidada ? 'bg-emerald-950/40 border-emerald-500/40' : 'bg-slate-950/80 border-slate-800'} border rounded-xl flex items-center justify-between font-mono">
+            <div>
+              <span class="text-[10px] ${yaLiquidada ? 'text-emerald-300/80' : 'text-slate-400'} block font-sans">Tu Ganancia (${(pct * 100).toFixed(0)}%):</span>
+              <span class="text-sm font-black ${yaLiquidada ? 'text-emerald-300' : 'text-amber-400'}">+${fmtCRC(comFilaCRC)}</span>
+              <span class="text-[10px] text-slate-400 ml-1">(+${fmtUSD(comFilaUSD)})</span>
+            </div>
+            <button onclick="compartirComisionFacturaWhatsApp('${f.id}')" title="Compartir comprobante de comisión por WhatsApp" class="px-2.5 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg font-sans font-bold text-[10px] flex items-center gap-1 active:scale-95 transition-all">
+              <i data-lucide="message-circle" class="w-3.5 h-3.5"></i>
+              <span>WhatsApp</span>
+            </button>
+          </div>
+        </div>
+      `;
+    }).join("");
   }
 
-  cont.innerHTML = facturasFiltradas.map(f => {
-    const fStr = f.fecha ? new Date(f.fecha).toLocaleDateString([], { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" }) : "S/F";
-    const vCRC = parseNum(f.totalCRC, 0);
-    const vUSD = parseNum(f.totalUSD, 0);
-    const comFilaCRC = Math.round(vCRC * pct);
-    const comFilaUSD = vUSD > 0 ? (vUSD * pct) : (tc > 0 ? comFilaCRC / tc : 0);
-    const botesFila = (f.items || []).reduce((acc, it) => acc + parseNum(it.cantidad, 1), 0);
+  // 5. Renderizar Mis Recibos de Liquidación (Pagos Recibidos)
+  if (contRecibos) {
+    const misRecibos = [...(state.liquidaciones || [])];
+    if (countRecibos) countRecibos.textContent = misRecibos.length;
 
-    return `
-      <div class="p-3.5 bg-slate-900/90 border border-emerald-500/30 rounded-2xl space-y-2.5 text-xs shadow-md">
-        <!-- Cabecera -->
-        <div class="flex items-center justify-between border-b border-slate-800/80 pb-2">
-          <div class="flex items-center gap-1.5">
-            <span class="font-mono font-bold text-amber-400 text-xs">${f.id}</span>
-            <span class="text-[10px] text-slate-400 font-mono">(${fStr})</span>
-          </div>
-          <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-950/90 text-emerald-300 border border-emerald-500/40">
-            +${(pct * 100).toFixed(0)}% Comisión
-          </span>
+    if (misRecibos.length === 0) {
+      contRecibos.innerHTML = `
+        <div class="p-6 text-center text-slate-500 space-y-1 text-xs">
+          <p class="font-bold text-slate-400">Aún no tienes recibos de liquidación.</p>
+          <p class="text-[11px] text-slate-500">Cuando Carlos o Daniel te liquiden comisiones en el sistema principal, tus comprobantes aparecerán aquí.</p>
         </div>
+      `;
+    } else {
+      contRecibos.innerHTML = misRecibos.map(liq => {
+        const fStr = liq.fecha ? new Date(liq.fecha).toLocaleString([], { dateStyle: 'short', timeStyle: 'short' }) : "S/F";
+        return `
+          <div class="p-3 bg-slate-950/90 border border-emerald-500/30 rounded-2xl space-y-2 text-xs shadow-inner">
+            <div class="flex items-center justify-between border-b border-slate-800/80 pb-1.5">
+              <div class="flex items-center gap-1.5">
+                <span class="px-2 py-0.5 rounded-full text-[9.5px] font-bold bg-emerald-950 text-emerald-300 border border-emerald-500/40">
+                  🧾 Recibo de Pago
+                </span>
+                <span class="font-mono font-bold text-white text-xs">${liq.id}</span>
+              </div>
+              <span class="text-[10px] text-slate-400 font-mono">${fStr}</span>
+            </div>
 
-        <!-- Cliente y Pedido -->
-        <div class="flex items-start justify-between gap-2">
-          <div>
-            <span class="text-xs font-bold text-white block">${f.cliente || "Cliente General"}</span>
-            <span class="text-[10px] text-sky-400 font-mono">📋 Pedido: ${f.pedidoOrigenId || 'N/A'}</span>
-          </div>
-          <div class="text-right shrink-0">
-            <span class="text-[10px] text-slate-400 block font-mono">Venta: <b>${fmtCRC(vCRC)}</b></span>
-            <span class="text-[10px] text-slate-500 font-mono">${botesFila} botella(s)</span>
-          </div>
-        </div>
+            <div class="flex items-center justify-between">
+              <div>
+                <span class="text-slate-400 text-[10px] block font-sans">Liquidado por:</span>
+                <b class="text-white text-xs">${liq.liquidadoPor || 'Carlos'}</b>
+                <span class="text-[10px] text-slate-400 font-mono block">Vía: ${liq.metodoPago || 'SINPE'}</span>
+              </div>
+              <div class="text-right font-mono">
+                <span class="text-sm font-black text-emerald-400 block leading-none">${fmtCRC(liq.montoCRC || 0)}</span>
+                <span class="text-[10px] text-slate-400">(${fmtUSD(liq.montoUSD || 0)})</span>
+              </div>
+            </div>
 
-        <!-- Caja destacada de ganancia para el preventa -->
-        <div class="p-2.5 bg-emerald-950/40 border border-emerald-500/40 rounded-xl flex items-center justify-between font-mono">
-          <div>
-            <span class="text-[10px] text-emerald-300/80 block font-sans">Tu Ganancia (${(pct * 100).toFixed(0)}%):</span>
-            <span class="text-sm font-black text-emerald-300">+${fmtCRC(comFilaCRC)}</span>
-            <span class="text-[10px] text-emerald-400/80 ml-1">(+${fmtUSD(comFilaUSD)})</span>
+            ${liq.notas ? `
+              <div class="pt-1 border-t border-slate-800/80 text-[10px] text-slate-400 italic">
+                Nota: "${liq.notas}"
+              </div>
+            ` : ''}
           </div>
-          <button onclick="compartirComisionFacturaWhatsApp('${f.id}')" title="Compartir comprobante de comisión por WhatsApp" class="px-2.5 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg font-sans font-bold text-[10px] flex items-center gap-1 active:scale-95 transition-all">
-            <i data-lucide="message-circle" class="w-3.5 h-3.5"></i>
-            <span>WhatsApp</span>
-          </button>
-        </div>
-      </div>
-    `;
-  }).join("");
+        `;
+      }).join("");
+    }
+  }
+
+  inicializarIconos();
+}
 
   inicializarIconos();
 }
@@ -1848,6 +1948,16 @@ async function sincronizarConSheets(mostrarMensaje = true) {
 
         state.facturas = Array.from(mapVentas.values());
         guardarFacturasLocal();
+      }
+
+      // E. Liquidaciones: Pagos de comisiones recibidos de Carlos/Daniel
+      if (json.data.liquidaciones && Array.isArray(json.data.liquidaciones)) {
+        const miVend = String(state.vendedor || "Colaborador").trim().toLowerCase();
+        state.liquidaciones = json.data.liquidaciones.filter(l => {
+          const v = String(l.vendedorPreventa || "").trim().toLowerCase();
+          return v === miVend;
+        });
+        guardarLiquidacionesLocal();
       }
 
       renderizarTodo();
