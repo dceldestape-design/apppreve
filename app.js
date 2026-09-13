@@ -1301,6 +1301,61 @@ function filtrarFacturas() {
   renderizarFacturas();
 }
 
+function descargarFacturaTicket(idFactura) {
+  const f = (state.facturas || []).find(fact => fact.id === idFactura);
+  if (!f) {
+    mostrarToast("Factura no encontrada.", "error");
+    return;
+  }
+  const negocio = "DC EL DESTAPE LICORES";
+  const telefono = "+506 8992-7936";
+  const fecha = f.fecha ? new Date(f.fecha).toLocaleString([], { dateStyle: 'short', timeStyle: 'short' }) : new Date().toLocaleString();
+  const vendedorFacturo = f.facturadoPor || f.vendedor || "Carlos";
+
+  let lines = [
+    "==========================================",
+    `        ${negocio.toUpperCase()}`,
+    `         Tel: ${telefono}`,
+    "==========================================",
+    `COMPROBANTE / FACTURA: ${f.id}`,
+    `Fecha: ${fecha}`,
+    `Facturado por: ${vendedorFacturo}`,
+    f.pedidoOrigenId ? `Pedido preventa: ${f.pedidoOrigenId}` : "",
+    f.pedidoOrigenVendedor ? `Tomó pedido: ${f.pedidoOrigenVendedor}` : "",
+    `Cliente: ${f.cliente || "Cliente General"}`,
+    "------------------------------------------",
+    "CANT  PRODUCTO                    TOTAL",
+    "------------------------------------------"
+  ].filter(Boolean);
+
+  (f.items || []).forEach(i => {
+    const cant = `${i.cantidad}x`.padEnd(5);
+    const nom = (i.nombre || i.codigo || "").slice(0, 22).padEnd(23);
+    const sub = fmtCRC(i.subtotalCRC || (i.cantidad * (i.precioVentaCRC || 0)));
+    lines.push(`${cant} ${nom} ${sub}`);
+  });
+
+  lines.push("------------------------------------------");
+  lines.push(`Método de Pago: ${f.metodoPago || "Efectivo"}`);
+  lines.push(`TOTAL CRC: ${fmtCRC(f.totalCRC)}`);
+  lines.push(`TOTAL USD: ${fmtUSD(f.totalUSD)}`);
+  lines.push("==========================================");
+  lines.push("       ¡Gracias por su preferencia!");
+  lines.push("==========================================");
+
+  const textContent = lines.join("\r\n");
+  const blob = new Blob([textContent], { type: "text/plain;charset=utf-8" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = `Comprobante_${f.id}.txt`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+  mostrarToast(`Comprobante ${f.id} descargado.`, "success");
+}
+
 function renderizarFacturas() {
   const cont = document.getElementById("misFacturasList");
   const badge = document.getElementById("facturasCountBadge");
@@ -1325,7 +1380,13 @@ function renderizarFacturas() {
       <div class="text-center py-10 text-slate-500 bg-slate-900/60 rounded-3xl border border-slate-800 space-y-2">
         <i data-lucide="receipt" class="w-10 h-10 mx-auto text-slate-600 stroke-1"></i>
         <p class="text-xs font-bold text-slate-400">${q ? "No hay facturas que coincidan con la búsqueda." : "Aún no tienes pedidos facturados."}</p>
-        <p class="text-[11px] text-slate-500 max-w-xs mx-auto">Cuando Carlos o Daniel facturen uno de tus pedidos en el sistema principal, aparecerá aquí con su comprobante.</p>
+        <p class="text-[11px] text-slate-500 max-w-xs mx-auto">Cuando Carlos o Daniel facturen uno de tus pedidos en el sistema principal, aparecerá aquí automáticamente con su comprobante descargable.</p>
+        <div class="pt-2">
+          <button onclick="sincronizarConSheets(true)" class="px-3.5 py-1.5 bg-amber-500/20 hover:bg-amber-500/30 border border-amber-500/40 text-amber-300 font-bold rounded-xl text-xs inline-flex items-center gap-1.5 active:scale-95 transition-all">
+            <i data-lucide="refresh-cw" class="w-3.5 h-3.5"></i>
+            <span>Sincronizar y Descargar Facturas</span>
+          </button>
+        </div>
       </div>
     `;
     inicializarIconos();
@@ -1366,23 +1427,30 @@ function renderizarFacturas() {
           ${(f.items || []).map(it => `
             <div class="flex justify-between font-mono">
               <span class="truncate">${it.cantidad}x ${it.nombre}</span>
-              <span class="text-emerald-400 font-bold ml-2 shrink-0">${fmtCRC(it.subtotalCRC || (it.cantidad * it.precioVentaCRC))}</span>
+              <span class="text-emerald-400 font-bold ml-2 shrink-0">${fmtCRC(it.subtotalCRC || (it.cantidad * (it.precioVentaCRC || 0)))}</span>
             </div>
           `).join("")}
         </div>
 
-        <!-- Totales y Botón WhatsApp -->
-        <div class="pt-2 border-t border-slate-800/80 flex items-center justify-between">
+        <!-- Totales y Botones de Acción -->
+        <div class="pt-2 border-t border-slate-800/80 flex items-center justify-between gap-2">
           <div>
             <span class="text-[10px] text-slate-400 block font-sans">Total (${totalBotellas} unids):</span>
             <span class="text-sm font-black text-emerald-400 font-mono">${fmtCRC(f.totalCRC)}</span>
             <span class="text-[10px] text-slate-400 font-mono ml-1">(${fmtUSD(f.totalUSD)})</span>
           </div>
 
-          <button onclick="compartirFacturaWhatsApp('${f.id}')" class="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-xl active:scale-95 transition-all flex items-center gap-1.5 shadow-md shadow-emerald-600/30 text-xs">
-            <i data-lucide="message-circle" class="w-4 h-4"></i>
-            <span>Enviar Ticket</span>
-          </button>
+          <div class="flex items-center gap-1.5 shrink-0">
+            <button onclick="descargarFacturaTicket('${f.id}')" title="Descargar comprobante en archivo" class="px-2.5 py-1.5 bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 font-bold rounded-xl active:scale-95 transition-all flex items-center gap-1 text-[11px]">
+              <i data-lucide="download" class="w-3.5 h-3.5 text-amber-400"></i>
+              <span>Descargar</span>
+            </button>
+
+            <button onclick="compartirFacturaWhatsApp('${f.id}')" title="Enviar comprobante por WhatsApp" class="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-xl active:scale-95 transition-all flex items-center gap-1 shadow-md shadow-emerald-600/30 text-[11px]">
+              <i data-lucide="message-circle" class="w-3.5 h-3.5"></i>
+              <span>Enviar Ticket</span>
+            </button>
+          </div>
         </div>
       </div>
     `;
@@ -1944,15 +2012,58 @@ async function sincronizarConSheets(mostrarMensaje = true) {
       const rawVentas = json.data.ultimasVentas || json.data.ventas || [];
       if (Array.isArray(rawVentas)) {
         const miVend = String(state.vendedor || "Colaborador").trim().toLowerCase();
-        // Consolidar filas de ventas por ID de venta
+        
+        // 1. Recopilar todos los IDs de pedidos de este preventa (locales y del servidor)
+        const misPedidosIds = new Set();
+        (state.misPedidos || []).forEach(p => {
+          if (p && p.id) misPedidosIds.add(String(p.id).trim().toLowerCase());
+        });
+        if (json.data.pedidos && Array.isArray(json.data.pedidos)) {
+          json.data.pedidos.forEach(p => {
+            const pVend = String(p.vendedor || "").trim().toLowerCase();
+            if (p && p.id && (pVend === miVend || miVend === "colaborador" || pVend.includes(miVend) || miVend.includes(pVend))) {
+              misPedidosIds.add(String(p.id).trim().toLowerCase());
+            }
+          });
+        }
+
+        // 2. Mapa de facturas asociadas a pedidos de este preventa
         const mapVentas = new Map();
         rawVentas.forEach(v => {
           if (!v || !v.id) return;
           const origVend = String(v.pedidoOrigenVendedor || "").trim().toLowerCase();
-          // Pertenece a este preventa si el pedidoOrigenVendedor coincide
-          if (origVend !== miVend) return;
+          const vVend = String(v.vendedor || "").trim().toLowerCase();
+          const pedId = String(v.pedidoOrigenId || "").trim().toLowerCase();
+
+          // Comprobar si pertenece a este vendedor preventa por cualquiera de estas vías:
+          const coincideVendedorOrigen = !!origVend && (origVend === miVend || origVend.includes(miVend) || miVend.includes(origVend));
+          const coincidePedidoOrigenId = !!pedId && misPedidosIds.has(pedId);
+          const coincideVendedorDirecto = !origVend && !pedId && (vVend === miVend || vVend.includes(miVend) || miVend.includes(vVend));
+          
+          // O si algún pedido de este preventa tiene vinculado el ID de esta factura
+          let coincidePorIdFacturaEnPedido = false;
+          if (json.data.pedidos && Array.isArray(json.data.pedidos)) {
+            coincidePorIdFacturaEnPedido = json.data.pedidos.some(p => 
+              misPedidosIds.has(String(p.id).trim().toLowerCase()) && 
+              (String(p.idFactura || p.idVenta || p.facturaId || "").trim().toLowerCase() === String(v.id).trim().toLowerCase())
+            );
+          }
+
+          if (!coincideVendedorOrigen && !coincidePedidoOrigenId && !coincideVendedorDirecto && !coincidePorIdFacturaEnPedido) {
+            return;
+          }
 
           if (!mapVentas.has(v.id)) {
+            // Determinar pedidoOrigenId real si no venía en la fila de venta
+            let pedIdAsociado = v.pedidoOrigenId || "";
+            if (!pedIdAsociado && misPedidosIds.size > 0) {
+              const pedEncontrado = (state.misPedidos || []).find(p => 
+                (p.idFactura && p.idFactura === v.id) ||
+                (String(p.cliente || "").trim().toLowerCase() === String(v.cliente || "").trim().toLowerCase())
+              );
+              if (pedEncontrado) pedIdAsociado = pedEncontrado.id;
+            }
+
             mapVentas.set(v.id, {
               id: v.id,
               fecha: v.fecha,
@@ -1960,8 +2071,8 @@ async function sincronizarConSheets(mostrarMensaje = true) {
               metodoPago: v.metodoPago || "Efectivo",
               vendedor: v.vendedor || "Carlos",
               facturadoPor: v.facturadoPor || v.vendedor || "Carlos",
-              pedidoOrigenId: v.pedidoOrigenId || "",
-              pedidoOrigenVendedor: v.pedidoOrigenVendedor || "",
+              pedidoOrigenId: pedIdAsociado,
+              pedidoOrigenVendedor: v.pedidoOrigenVendedor || state.vendedor || "",
               totalCRC: 0,
               totalUSD: 0,
               items: []
@@ -1969,23 +2080,43 @@ async function sincronizarConSheets(mostrarMensaje = true) {
           }
 
           const fact = mapVentas.get(v.id);
-          const cant = parseNum(v.cantidad, 1);
-          const pCRC = parseNum(v.precioCRC !== undefined ? v.precioCRC : v.precioVentaCRC, 0);
-          const pUSD = parseNum(v.precioUSD !== undefined ? v.precioUSD : v.precioVentaUSD, 0);
-          const totCRC = parseNum(v.totalCRC, cant * pCRC);
-          const totUSD = parseNum(v.totalUSD, cant * pUSD);
-
-          fact.totalCRC += totCRC;
-          fact.totalUSD += totUSD;
-          fact.items.push({
-            codigo: v.codigo || "",
-            nombre: v.nombre || v.codigo || "Producto",
-            cantidad: cant,
-            precioVentaCRC: pCRC,
-            precioVentaUSD: pUSD,
-            subtotalCRC: totCRC,
-            subtotalUSD: totUSD
-          });
+          if (Array.isArray(v.items) && v.items.length > 0) {
+            v.items.forEach(it => {
+              const cant = parseNum(it.cantidad, 1);
+              const pCRC = parseNum(it.precioVentaCRC !== undefined ? it.precioVentaCRC : it.precioCRC, 0);
+              const pUSD = parseNum(it.precioVentaUSD !== undefined ? it.precioVentaUSD : it.precioUSD, 0);
+              const totCRC = parseNum(it.subtotalCRC !== undefined ? it.subtotalCRC : it.totalCRC, cant * pCRC);
+              const totUSD = parseNum(it.subtotalUSD !== undefined ? it.subtotalUSD : it.totalUSD, cant * pUSD);
+              fact.totalCRC += totCRC;
+              fact.totalUSD += totUSD;
+              fact.items.push({
+                codigo: it.codigo || "",
+                nombre: it.nombre || it.codigo || "Producto",
+                cantidad: cant,
+                precioVentaCRC: pCRC,
+                precioVentaUSD: pUSD,
+                subtotalCRC: totCRC,
+                subtotalUSD: totUSD
+              });
+            });
+          } else {
+            const cant = parseNum(v.cantidad, 1);
+            const pCRC = parseNum(v.precioCRC !== undefined ? v.precioCRC : v.precioVentaCRC, 0);
+            const pUSD = parseNum(v.precioUSD !== undefined ? v.precioUSD : v.precioVentaUSD, 0);
+            const totCRC = parseNum(v.totalCRC, cant * pCRC);
+            const totUSD = parseNum(v.totalUSD, cant * pUSD);
+            fact.totalCRC += totCRC;
+            fact.totalUSD += totUSD;
+            fact.items.push({
+              codigo: v.codigo || "",
+              nombre: v.nombre || v.codigo || "Producto",
+              cantidad: cant,
+              precioVentaCRC: pCRC,
+              precioVentaUSD: pUSD,
+              subtotalCRC: totCRC,
+              subtotalUSD: totUSD
+            });
+          }
         });
 
         state.facturas = Array.from(mapVentas.values());
