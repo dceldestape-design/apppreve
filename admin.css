@@ -1,0 +1,252 @@
+﻿/* ==========================================================================
+   DC EL DESTAPE - ESTILOS WEB ADMINISTRATIVA DE ESCRITORIO
+   Optimizada para monitores de PC, laptops y pantallas panorámicas
+   ========================================================================== */
+
+:root {
+  color-scheme: dark;
+  font-size: 15px;
+}
+
+@media (min-width: 1440px) {
+  :root {
+    font-size: 16px;
+  }
+}
+
+/* --------------------------------------------------------------------------
+   CUSTOM DESKTOP SCROLLBARS
+   -------------------------------------------------------------------------- */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #090d16;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #253349;
+  border-radius: 6px;
+  border: 2px solid #090d16;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #3b82f6;
+}
+
+/* --------------------------------------------------------------------------
+   ESTRUCTURA FLUIDA & TIPOGRAFÍA DE ESCRITORIO
+   -------------------------------------------------------------------------- */
+body {
+  font-size: 0.925rem;
+  line-height: 1.5;
+  background-color: #060911;
+  color: #f1f5f9;
+  overflow-x: hidden;
+}
+
+/* Evitar textos microscópicos sin romper el flujo de cajas */
+[class*="text-[9px]"],
+[class*="text-[9.5px]"] {
+  font-size: 0.76rem !important;
+}
+
+[class*="text-[10px]"] {
+  font-size: 0.82rem !important;
+}
+
+[class*="text-[11px]"] {
+  font-size: 0.86rem !important;
+}
+
+/* --------------------------------------------------------------------------
+   SIDEBAR LATERAL FIJO
+   -------------------------------------------------------------------------- */
+.admin-nav-item {
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+  padding: 0.75rem 1rem;
+  border-radius: 0.85rem;
+  font-weight: 600;
+  font-size: 0.925rem;
+  color: #94a3b8;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  cursor: pointer;
+  border: 1px solid transparent;
+}
+
+.admin-nav-item:hover {
+  color: #f8fafc;
+  background-color: #1e293b;
+  border-color: #334155;
+  transform: translateX(3px);
+}
+
+.admin-nav-item.active {
+  background: linear-gradient(135deg, rgba(99, 102, 241, 0.25), rgba(79, 70, 229, 0.45));
+  color: #e0e7ff;
+  border-color: rgba(99, 102, 241, 0.5);
+  box-shadow: 0 4px 14px rgba(79, 70, 229, 0.25);
+  font-weight: 700;
+}
+
+.admin-nav-item.active i,
+.admin-nav-item.active svg {
+  color: #a5b4fc;
+}
+
+/* --------------------------------------------------------------------------
+   INTERACCIONES GENERALES (BOTONES & INPUTS)
+   -------------------------------------------------------------------------- */
+button, select, input, .cursor-pointer {
+  cursor: pointer;
+}
+
+input[type="text"],
+input[type="number"],
+input[type="date"],
+input[type="search"],
+select,
+textarea {
+  cursor: text;
+  font-size: 0.925rem;
+}
+
+.cat-pill {
+  padding: 0.5rem 1rem !important;
+  font-size: 0.85rem !important;
+  font-weight: 600 !important;
+  border-radius: 9999px !important;
+  background-color: #162032;
+  color: #94a3b8;
+  border: 1px solid #28374f;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+.cat-pill:hover {
+  background-color: #1e2e47;
+  color: #ffffff;
+  border-color: #3b82f6;
+}
+
+.cat-pill.active {
+  background: linear-gradient(135deg, #4f46e5, #6366f1) !important;
+  color: #ffffff !important;
+  border-color: #818cf8 !important;
+  box-shadow: 0 4px 12px rgba(79, 70, 229, 0.35) !important;
+}
+
+.pay-btn {
+  padding: 0.85rem 0.75rem !important;
+  font-size: 0.875rem !important;
+  font-weight: 700 !important;
+  border-radius: 0.85rem !important;
+  transition: all 0.2s ease !important;
+}
+
+.pay-btn.active {
+  background: linear-gradient(135deg, #4f46e5, #4338ca) !important;
+  color: #ffffff !important;
+  border-color: #6366f1 !important;
+  box-shadow: 0 4px 14px rgba(79, 70, 229, 0.4) !important;
+}
+
+/* --------------------------------------------------------------------------
+   CATÁLOGO DE PRODUCTOS EN PC (CUADRÍCULA CON FOTOS GRANDES)
+   -------------------------------------------------------------------------- */
+@media (min-width: 1024px) {
+  #productsList {
+    display: grid !important;
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 1.25rem !important;
+  }
+}
+
+@media (min-width: 1400px) {
+  #productsList {
+    grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+    gap: 1.5rem !important;
+  }
+}
+
+/* Tarjeta individual de producto */
+.admin-product-card {
+  background: linear-gradient(145deg, #101625, #0a0e19);
+  border: 1px solid #1e293b;
+  border-radius: 1.25rem;
+  padding: 1.15rem;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.admin-product-card:hover {
+  border-color: #6366f1;
+  transform: translateY(-3px);
+  box-shadow: 0 12px 28px rgba(99, 102, 241, 0.2);
+}
+
+/* Área de imagen de botella grande */
+.admin-product-img-box {
+  width: 100%;
+  height: 12.5rem; /* 200px de altura */
+  border-radius: 1rem;
+  background-color: #060911;
+  border: 1px solid #1a2333;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  position: relative;
+  cursor: pointer;
+  margin: 0.5rem 0;
+}
+
+.admin-product-img-box img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  padding: 0.5rem;
+  transition: transform 0.3s ease;
+}
+
+.admin-product-img-box:hover img {
+  transform: scale(1.06);
+}
+
+/* --------------------------------------------------------------------------
+   MODALES EN DESKTOP
+   -------------------------------------------------------------------------- */
+.fixed.inset-0.z-50 {
+  display: none;
+  align-items: center;
+  justify-content: center;
+  padding: 1.5rem;
+  backdrop-filter: blur(8px);
+}
+
+.fixed.inset-0.z-50.flex {
+  display: flex !important;
+}
+
+.fixed.inset-0.z-50 > div {
+  width: 100% !important;
+  max-width: 640px !important;
+  max-height: 90vh !important;
+  overflow-y: auto !important;
+  border-radius: 1.5rem !important;
+  padding: 1.75rem !important;
+  border: 1px solid #334155 !important;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.8) !important;
+}
+
+#modalFotoCompleta > div {
+  max-width: 520px !important;
+  padding: 1.5rem !important;
+}

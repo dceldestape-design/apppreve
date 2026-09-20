@@ -1,0 +1,816 @@
+<!DOCTYPE html>
+<html lang="es" class="h-full">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>DC El Destape • Club de la Taberna & Puntos VIP 🍻</title>
+  <link rel="icon" type="image/png" href="logo.png">
+  <meta name="theme-color" content="#120c06">
+  
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  
+  <!-- Google Fonts: Outfit & Plus Jakarta Sans -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700;800;900&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+  
+  <!-- Canvas Confetti -->
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+
+  <style>
+    body {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      background-color: #0c0804;
+      color: #f8fafc;
+      overflow-x: hidden;
+    }
+    .font-tavern {
+      font-family: 'Outfit', sans-serif;
+    }
+    
+    /* Neon glow effects */
+    .glow-amber {
+      text-shadow: 0 0 15px rgba(245, 158, 11, 0.6), 0 0 30px rgba(217, 119, 6, 0.4);
+    }
+    .box-glow-amber {
+      box-shadow: 0 0 25px rgba(245, 158, 11, 0.25), inset 0 0 15px rgba(245, 158, 11, 0.15);
+    }
+    .box-glow-gold {
+      box-shadow: 0 0 35px rgba(251, 191, 36, 0.3), 0 0 10px rgba(245, 158, 11, 0.2);
+    }
+    
+    /* Wood / Tavern Gradients */
+    .bg-tavern-card {
+      background: linear-gradient(145deg, rgba(30, 20, 12, 0.92) 0%, rgba(18, 12, 7, 0.96) 100%);
+      border: 1px solid rgba(217, 119, 6, 0.35);
+    }
+    .bg-tavern-gold {
+      background: linear-gradient(135deg, #f59e0b 0%, #d97706 50%, #b45309 100%);
+    }
+
+    /* Floating beer bubbles animation */
+    .bubble {
+      position: fixed;
+      bottom: -40px;
+      background: radial-gradient(circle at 30% 30%, rgba(254, 240, 138, 0.8), rgba(245, 158, 11, 0.25));
+      border: 1px solid rgba(254, 240, 138, 0.4);
+      border-radius: 50%;
+      pointer-events: none;
+      z-index: 1;
+      animation: floatUp 8s infinite linear;
+    }
+    @keyframes floatUp {
+      0% { transform: translateY(0) scale(0.6); opacity: 0; }
+      20% { opacity: 0.6; }
+      70% { opacity: 0.7; }
+      100% { transform: translateY(-110vh) scale(1.1); opacity: 0; }
+    }
+
+    /* Neon sign pulsing */
+    @keyframes neonPulse {
+      0%, 100% { opacity: 1; filter: drop-shadow(0 0 8px rgba(245, 158, 11, 0.7)); }
+      50% { opacity: 0.88; filter: drop-shadow(0 0 18px rgba(245, 158, 11, 0.9)); }
+    }
+    .neon-pulse {
+      animation: neonPulse 3s infinite ease-in-out;
+    }
+
+    /* Shimmer effect on button */
+    .shimmer {
+      position: relative;
+      overflow: hidden;
+    }
+    .shimmer::after {
+      content: '';
+      position: absolute;
+      top: -50%;
+      left: -50%;
+      width: 200%;
+      height: 200%;
+      background: linear-gradient(
+        60deg,
+        transparent 20%,
+        rgba(255, 255, 255, 0.25) 50%,
+        transparent 80%
+      );
+      transform: rotate(30deg);
+      animation: shimmerAnim 4s infinite linear;
+    }
+    @keyframes shimmerAnim {
+      0% { transform: translate(-100%, -100%) rotate(30deg); }
+      100% { transform: translate(100%, 100%) rotate(30deg); }
+    }
+  </style>
+</head>
+<body class="min-h-full flex flex-col relative antialiased selection:bg-amber-500 selection:text-black">
+
+  <!-- Ambient Bubbles Layer -->
+  <div id="bubblesContainer" class="fixed inset-0 pointer-events-none overflow-hidden z-0"></div>
+
+  <!-- Top Ambient Lights -->
+  <div class="fixed top-0 left-1/2 -translate-x-1/2 w-full max-w-lg h-56 bg-amber-500/10 rounded-full blur-3xl pointer-events-none z-0"></div>
+  <div class="fixed bottom-0 right-0 w-72 h-72 bg-orange-600/10 rounded-full blur-3xl pointer-events-none z-0"></div>
+
+  <!-- Sound and Status Bar -->
+  <header class="relative z-20 w-full max-w-md mx-auto px-4 pt-3 flex items-center justify-between">
+    <div class="flex items-center gap-2">
+      <span class="inline-flex items-center gap-1.5 text-[11px] font-bold px-2.5 py-1 rounded-full bg-amber-950/80 border border-amber-500/40 text-amber-300 neon-pulse">
+        <span>🍻</span>
+        <span>DC EL DESTAPE</span>
+      </span>
+    </div>
+    <div class="flex items-center gap-1.5">
+      <!-- Sound toggle -->
+      <button id="btnSoundToggle" onclick="toggleSonido()" class="w-8 h-8 rounded-full bg-stone-900/80 border border-amber-500/30 flex items-center justify-center text-amber-400 hover:text-amber-300 active:scale-95 transition-all" title="Activar/desactivar sonido de taberna">
+        <i data-lucide="volume-2" id="iconSound" class="w-4 h-4"></i>
+      </button>
+      <!-- Confetti trigger -->
+      <button onclick="lanzarFiesta(true); reproducirSonido('cheers')" class="w-8 h-8 rounded-full bg-amber-500/20 border border-amber-500/40 flex items-center justify-center text-amber-300 hover:bg-amber-500/30 active:scale-95 transition-all" title="¡Lanzar fiesta!">
+        <span>🎉</span>
+      </button>
+    </div>
+  </header>
+
+  <!-- Main Container -->
+  <main class="relative z-10 flex-1 w-full max-w-md mx-auto px-4 py-4 flex flex-col justify-center">
+
+    <!-- ============================================================== -->
+    <!-- VIEW 1: ENTRADA A LA TABERNA (LOGIN / CONSULTA)                 -->
+    <!-- ============================================================== -->
+    <section id="vistaLogin" class="space-y-5 transition-all duration-300">
+      
+      <!-- Tavern Header Branding -->
+      <div class="text-center space-y-3">
+        <div class="relative inline-block">
+          <div class="w-24 h-24 mx-auto rounded-3xl bg-gradient-to-br from-amber-600 to-amber-950 p-1 shadow-2xl shadow-amber-500/30 box-glow-amber relative overflow-hidden">
+            <img src="logo.png" onerror="this.onerror=null; this.src='logo.jpg'" alt="DC El Destape" class="w-full h-full object-cover rounded-2xl">
+          </div>
+          <span class="absolute -bottom-2 -right-2 text-2xl animate-bounce">🍺</span>
+        </div>
+        <div>
+          <h1 class="font-tavern text-2xl font-black tracking-wide text-white glow-amber">
+            CLUB DE LA TABERNA
+          </h1>
+          <p class="text-xs text-amber-300/80 font-medium tracking-wide mt-0.5 font-tavern">
+            Puntos VIP & Recompensas de Fiesta
+          </p>
+        </div>
+        <p class="text-xs text-stone-300 leading-relaxed max-w-xs mx-auto">
+          Ingresa tu número de celular para consultar los puntos ganados por tus compras de licores y canjear premios.
+        </p>
+      </div>
+
+      <!-- Login Card -->
+      <div class="bg-tavern-card rounded-3xl p-5 shadow-2xl box-glow-amber space-y-4">
+        <div class="flex items-center gap-2 border-b border-amber-500/20 pb-2.5">
+          <span class="p-1.5 rounded-xl bg-amber-500/20 text-amber-400">
+            <i data-lucide="sparkles" class="w-4 h-4"></i>
+          </span>
+          <span class="text-xs font-bold text-amber-200 uppercase tracking-wider font-tavern">
+            Ingreso de Clientes
+          </span>
+        </div>
+
+        <form id="formConsulta" onsubmit="consultarPuntos(event)" class="space-y-3.5">
+          <div>
+            <label for="inputTelefono" class="block text-xs font-bold text-stone-300 mb-1.5">
+              Número de Celular
+            </label>
+            <div class="relative flex items-center">
+              <span class="absolute left-3 flex items-center gap-1 text-xs font-bold text-amber-400 font-mono select-none">
+                <span>🇨🇷</span>
+                <span>+506</span>
+              </span>
+              <input 
+                type="tel" 
+                id="inputTelefono" 
+                inputmode="numeric"
+                maxlength="14"
+                placeholder="Ej: 8888-8888" 
+                autocomplete="tel"
+                required
+                class="w-full pl-20 pr-10 py-3 bg-stone-950/80 border border-amber-500/40 focus:border-amber-400 rounded-2xl text-base font-black text-white placeholder-stone-600 focus:outline-none focus:ring-2 focus:ring-amber-500/30 font-mono tracking-wider transition-all"
+              >
+              <button 
+                type="button" 
+                id="btnClearTel" 
+                onclick="limpiarTelefono()" 
+                class="hidden absolute right-3 text-stone-500 hover:text-stone-300 p-1"
+              >
+                <i data-lucide="x" class="w-4 h-4"></i>
+              </button>
+            </div>
+          </div>
+
+          <div class="flex items-center justify-between text-[11px] text-stone-400">
+            <label class="flex items-center gap-1.5 cursor-pointer">
+              <input type="checkbox" id="chkRecordar" checked class="w-3.5 h-3.5 rounded border-amber-500/40 text-amber-600 focus:ring-0 bg-stone-900">
+              <span>Recordar en este celular</span>
+            </label>
+          </div>
+
+          <button 
+            type="submit" 
+            id="btnEntrar"
+            class="shimmer w-full py-3.5 px-4 bg-tavern-gold hover:opacity-95 text-stone-950 font-tavern font-black text-sm uppercase tracking-wider rounded-2xl shadow-lg shadow-amber-500/30 flex items-center justify-center gap-2 active:scale-95 transition-all"
+          >
+            <span>🍻</span>
+            <span>Entrar a la Fiesta y Ver Puntos</span>
+            <i data-lucide="arrow-right" class="w-4 h-4"></i>
+          </button>
+        </form>
+
+        <!-- Loading spinner inside login -->
+        <div id="loginCargando" class="hidden text-center py-3 space-y-2">
+          <div class="w-7 h-7 border-2 border-amber-400 border-t-transparent rounded-full animate-spin mx-auto"></div>
+          <p class="text-xs text-amber-300 font-medium">Buscando tus copas y puntos en la taberna...</p>
+        </div>
+
+        <!-- Error Message -->
+        <div id="loginError" class="hidden p-3 rounded-xl bg-rose-950/70 border border-rose-500/40 text-rose-300 text-xs text-center leading-relaxed">
+          <span id="loginErrorTexto"></span>
+        </div>
+      </div>
+
+      <!-- Footer Help / Contact -->
+      <div class="text-center space-y-2 pt-1">
+        <p class="text-[11px] text-stone-400">
+          ¿Aún no estás registrado en el Club?
+        </p>
+        <a 
+          id="linkRegistroWhatsapp"
+          href="https://wa.me/50689927936?text=Hola%20DC%20El%20Destape!%20🍻%20Quiero%20hacer%20mi%20primer%20pedido%20y%20registrarme%20en%20el%20Club%20de%20Puntos%20para%20acumular%20premios%20con%20mis%20compras%20🎉" 
+          target="_blank"
+          class="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-stone-900/90 hover:bg-stone-800 border border-amber-500/30 text-amber-400 text-xs font-bold transition-all active:scale-95"
+        >
+          <i data-lucide="message-circle" class="w-3.5 h-3.5"></i>
+          <span>Con tu primer pedido te registramos 📲</span>
+        </a>
+        <p class="text-[10px] text-stone-500 pt-0.5">
+          📞 <span class="font-mono font-bold text-amber-400/80">+506 8992-7936</span>
+        </p>
+      </div>
+    </section>
+
+    <!-- ============================================================== -->
+    <!-- VIEW 2: BARRA VIP (PUNTOS DEL CLIENTE)                          -->
+    <!-- ============================================================== -->
+    <section id="vistaPuntos" class="hidden space-y-4 transition-all duration-300">
+
+      <!-- Customer Header Card -->
+      <div class="bg-tavern-card rounded-3xl p-4 shadow-xl box-glow-amber flex items-center justify-between gap-3">
+        <div class="flex items-center gap-3 min-w-0">
+          <div class="w-12 h-12 rounded-2xl bg-gradient-to-br from-amber-500 to-amber-900 border border-amber-400/50 flex items-center justify-center text-2xl shadow-md shrink-0">
+            <span id="clienteAvatar">🍺</span>
+          </div>
+          <div class="min-w-0">
+            <div class="flex items-center gap-1.5">
+              <span class="text-[10px] font-black uppercase tracking-wider text-amber-400 font-tavern">¡Salud!</span>
+              <span id="clienteNivelPill" class="text-[9px] font-bold px-1.5 py-0.2 rounded bg-amber-950 border border-amber-500/40 text-amber-300 font-mono">VIP</span>
+            </div>
+            <h2 id="clienteNombre" class="text-base font-black text-white truncate font-tavern">Cliente Amigo</h2>
+            <p id="clienteTelefono" class="text-[10px] text-stone-400 font-mono">📞 8888-8888</p>
+          </div>
+        </div>
+        <button 
+          onclick="cerrarSesionCliente()" 
+          class="px-2.5 py-1.5 rounded-xl bg-stone-900 hover:bg-rose-950/60 border border-stone-700 hover:border-rose-500/40 text-stone-400 hover:text-rose-300 text-[10px] font-bold transition-all shrink-0 active:scale-95"
+          title="Consultar con otro celular"
+        >
+          <span>Salir 🚪</span>
+        </button>
+      </div>
+
+      <!-- Golden Points Vault Card -->
+      <div class="relative bg-gradient-to-br from-amber-950/80 via-stone-900 to-stone-950 border-2 border-amber-500/60 rounded-3xl p-5 shadow-2xl box-glow-gold overflow-hidden text-center space-y-3">
+        
+        <!-- Festive decorative background elements -->
+        <div class="absolute -right-8 -bottom-8 text-7xl opacity-10 pointer-events-none select-none">🍾</div>
+        <div class="absolute -left-6 -top-6 text-6xl opacity-10 pointer-events-none select-none">🍻</div>
+
+        <div class="flex items-center justify-center gap-1.5 text-[11px] font-bold tracking-widest text-amber-300 uppercase font-tavern">
+          <span>✨</span>
+          <span>Tus Puntos de Fiesta Acumulados</span>
+          <span>✨</span>
+        </div>
+
+        <!-- Animated Big Points Number -->
+        <div class="py-1">
+          <div id="puntosNumero" class="font-tavern text-5xl font-black text-amber-300 tracking-tight glow-amber select-none">
+            0
+          </div>
+          <span class="text-xs font-black uppercase tracking-wider text-amber-400/90 font-tavern">
+            PUNTOS DESTAPE
+          </span>
+        </div>
+
+        <!-- Equivalency in Colones -->
+        <div class="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full bg-emerald-950/90 border border-emerald-500/50 text-emerald-300 text-xs font-bold font-mono shadow-md">
+          <span>💰</span>
+          <span>Equivale a <b id="puntosEquivCRC" class="text-emerald-400 font-black">₡0</b> de descuento</span>
+        </div>
+
+        <!-- Tavern Level Progress Bar -->
+        <div class="pt-2 space-y-1.5 text-left border-t border-amber-500/20">
+          <div class="flex items-center justify-between text-[11px] font-bold">
+            <span id="clienteRangoTexto" class="text-amber-300">Rango: Aspirante a Tabernero</span>
+            <span id="clienteProgresoTexto" class="text-stone-400 font-mono text-[10px]">0 / 1000 pts</span>
+          </div>
+          <div class="w-full h-3 bg-stone-950 rounded-full overflow-hidden border border-amber-500/30 p-0.5">
+            <div id="barraProgreso" class="h-full bg-tavern-gold rounded-full transition-all duration-1000 shadow-sm" style="width: 0%;"></div>
+          </div>
+          <p id="clienteSiguienteNivelInfo" class="text-[10.5px] text-stone-400 text-center leading-snug">
+            Te faltan puntos para subir de nivel de taberna.
+          </p>
+        </div>
+
+      </div>
+
+      <!-- Action Button: Canjear por WhatsApp -->
+      <a 
+        id="btnCanjearWhatsApp"
+        href="#" 
+        target="_blank"
+        onclick="reproducirSonido('cheers')"
+        class="shimmer w-full py-4 px-4 bg-gradient-to-r from-emerald-600 via-emerald-500 to-teal-600 hover:opacity-95 text-white font-tavern font-black text-sm uppercase tracking-wider rounded-2xl shadow-xl shadow-emerald-600/30 flex items-center justify-center gap-2 active:scale-95 transition-all text-center"
+      >
+        <i data-lucide="message-circle" class="w-5 h-5"></i>
+        <span>Canjear Puntos por WhatsApp 📲</span>
+      </a>
+
+      <!-- Tavern Rewards Catalog (Beneficios) -->
+      <div class="bg-tavern-card rounded-3xl p-4 shadow-xl space-y-3">
+        <div class="flex items-center justify-between border-b border-amber-500/20 pb-2">
+          <div class="flex items-center gap-2">
+            <span class="text-base">📜</span>
+            <h3 class="font-tavern text-xs font-black text-white uppercase tracking-wider">
+              La Carta de Premios de la Taberna
+            </h3>
+          </div>
+          <span id="tasaPuntosLabel" class="text-[10px] font-mono text-amber-400 font-bold">₡20 = 1 pt</span>
+        </div>
+
+        <div class="space-y-2 text-left">
+          
+          <div class="p-3 rounded-2xl bg-stone-950/70 border border-amber-500/20 space-y-1">
+            <div class="flex items-center gap-1.5 text-amber-400 text-xs font-bold">
+              <span>🏷️</span>
+              <span class="font-tavern">Canjeo de Puntos</span>
+            </div>
+            <p class="text-[10px] text-stone-400 leading-snug">
+              Aplica tus puntos como descuento directo en cualquier licor o six pack. Necesitas mínimo <span id="minimoCanjeTexto" class="text-amber-300 font-bold">4,000 puntos</span> para canjear.
+            </p>
+          </div>
+
+          <div class="p-3 rounded-2xl bg-stone-950/70 border border-amber-500/20 space-y-1">
+            <div class="flex items-center gap-1.5 text-amber-400 text-xs font-bold">
+              <span>🎂</span>
+              <span class="font-tavern">Cumpleaños VIP</span>
+            </div>
+            <p class="text-[10px] text-stone-400 leading-snug">
+              Se aplica un <span class="text-amber-300 font-bold">10% de descuento</span> en tu mes de cumpleaños. ¡Dinos tu fecha y celebra como se debe! 🥳
+            </p>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- Extra Party & Refresh Buttons -->
+      <div class="flex items-center gap-2">
+        <button 
+          onclick="lanzarFiesta(true); reproducirSonido('cheers')" 
+          class="flex-1 py-2.5 px-3 rounded-xl bg-amber-500/20 hover:bg-amber-500/30 border border-amber-500/40 text-amber-300 text-xs font-bold font-tavern flex items-center justify-center gap-1.5 active:scale-95 transition-all"
+        >
+          <span>🎉</span>
+          <span>¡Lanzar Fiesta!</span>
+        </button>
+        <button 
+          onclick="consultarPuntos(null, true)" 
+          class="py-2.5 px-3 rounded-xl bg-stone-900 hover:bg-stone-800 border border-stone-700 text-stone-300 text-xs font-bold flex items-center justify-center gap-1 active:scale-95 transition-all"
+          title="Actualizar puntos desde Google Sheets"
+        >
+          <i data-lucide="refresh-cw" id="iconRefresh" class="w-3.5 h-3.5"></i>
+          <span>Actualizar</span>
+        </button>
+      </div>
+
+      <!-- Last visit / Info -->
+      <div id="clienteUltimaVisitaBox" class="text-center py-2 text-[10px] text-stone-500 font-mono">
+        <span id="clienteUltimaVisita">Última compra registrada: Reciente</span>
+      </div>
+
+    </section>
+
+  </main>
+
+  <!-- Global Tavern Footer -->
+  <footer class="relative z-10 w-full max-w-md mx-auto px-4 py-4 text-center text-[10px] text-stone-600 border-t border-amber-500/10">
+    <p>© 2026 DC El Destape • Licores & Celebraciones</p>
+    <p class="mt-0.5 text-stone-500">Tomar con moderación. Prohibida la venta a menores de edad.</p>
+  </footer>
+
+  <!-- ============================================================== -->
+  <!-- JAVASCRIPT LOGIC                                               -->
+  <!-- ============================================================== -->
+  <script>
+    // --- Token Público Restringido (Sólo consulta de puntos del cliente) ---
+    const PUBLIC_PORTAL_TOKEN = "dc_pub_Iltv0UdgAh364BlDJvekXQ";
+
+    // --- ESTADO Y CONFIGURACIÓN ---
+    const state = {
+      sheetsUrl: "",
+      clienteActual: null,
+      sonidoHabilitado: localStorage.getItem("destape_sonido") !== "false",
+      audioCtx: null,
+      // Config de puntos (se lee de inv_config_v2 en localStorage)
+      puntosRazonCRC: 20,    // Cada ₡20 gastados = 1 punto
+      puntosValorCRC: 1,     // 1 punto = ₡1 de descuento
+      puntosMinimoCanje: 4000 // Mínimo para poder canjear
+    };
+
+    // --- DETECCIÓN DE API URL Y CONFIG DE PUNTOS ---
+    function detectarApiUrl() {
+      // 1. Del parámetro URL ?api=...
+      const urlParams = new URLSearchParams(window.location.search);
+      const apiParam = urlParams.get("api");
+      if (apiParam && apiParam.startsWith("http")) {
+        state.sheetsUrl = apiParam;
+        localStorage.setItem("destape_sheets_url", apiParam);
+      } else {
+        // 2. De localStorage del cliente
+        const stored = localStorage.getItem("destape_sheets_url");
+        if (stored && stored.startsWith("http")) {
+          state.sheetsUrl = stored;
+        }
+      }
+
+      // 3. De la configuración de la app principal de inventario (si comparten origen)
+      try {
+        const invConfig = localStorage.getItem("inv_config_v2");
+        if (invConfig) {
+          const parsed = JSON.parse(invConfig);
+          if (parsed.sheetsUrl && parsed.sheetsUrl.startsWith("http") && !state.sheetsUrl) {
+            state.sheetsUrl = parsed.sheetsUrl;
+            localStorage.setItem("destape_sheets_url", parsed.sheetsUrl);
+          }
+          // Leer configuración de puntos guardada en el sistema principal
+          if (parsed.puntosRazonCRC && Number(parsed.puntosRazonCRC) > 0) {
+            state.puntosRazonCRC = Number(parsed.puntosRazonCRC);
+          }
+          if (parsed.puntosValorCRC && Number(parsed.puntosValorCRC) > 0) {
+            state.puntosValorCRC = Number(parsed.puntosValorCRC);
+          }
+          if (parsed.puntosMinimoCanje && Number(parsed.puntosMinimoCanje) > 0) {
+            state.puntosMinimoCanje = Number(parsed.puntosMinimoCanje);
+          }
+        }
+      } catch (e) {}
+
+      // Actualizar etiquetas UI con la config leída
+      const tasaLabel = document.getElementById("tasaPuntosLabel");
+      if (tasaLabel) tasaLabel.textContent = `₡${state.puntosRazonCRC} = 1 pt`;
+
+      const minimoTexto = document.getElementById("minimoCanjeTexto");
+      if (minimoTexto) minimoTexto.textContent = `${state.puntosMinimoCanje.toLocaleString()} puntos`;
+    }
+
+    // --- EFECTO DE BURBUJAS DE CERVEZA DE TABERNA ---
+    function iniciarBurbujas() {
+      const container = document.getElementById("bubblesContainer");
+      if (!container) return;
+      const cantBurbujas = 16;
+      for (let i = 0; i < cantBurbujas; i++) {
+        const bubble = document.createElement("div");
+        bubble.className = "bubble";
+        const size = Math.random() * 14 + 6;
+        bubble.style.width = `${size}px`;
+        bubble.style.height = `${size}px`;
+        bubble.style.left = `${Math.random() * 100}%`;
+        bubble.style.animationDuration = `${Math.random() * 6 + 5}s`;
+        bubble.style.animationDelay = `${Math.random() * 5}s`;
+        container.appendChild(bubble);
+      }
+    }
+
+    // --- SÍNTESIS DE SONIDOS DE TABERNA (Web Audio API) ---
+    function obtenerAudioContext() {
+      if (!state.audioCtx) {
+        const AudioContext = window.AudioContext || window.webkitAudioContext;
+        if (AudioContext) state.audioCtx = new AudioContext();
+      }
+      if (state.audioCtx && state.audioCtx.state === "suspended") {
+        state.audioCtx.resume();
+      }
+      return state.audioCtx;
+    }
+
+    function reproducirSonido(tipo) {
+      if (!state.sonidoHabilitado) return;
+      try {
+        const ctx = obtenerAudioContext();
+        if (!ctx) return;
+
+        if (tipo === "clink") {
+          // Sonido de copas brindando (cristal / brindis)
+          [2200, 3100].forEach((freq, idx) => {
+            const osc = ctx.createOscillator();
+            const gain = ctx.createGain();
+            osc.type = "sine";
+            osc.frequency.setValueAtTime(freq, ctx.currentTime);
+            gain.gain.setValueAtTime(0.12, ctx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 0.4 + (idx * 0.1));
+            osc.connect(gain);
+            gain.connect(ctx.destination);
+            osc.start(ctx.currentTime + (idx * 0.05));
+            osc.stop(ctx.currentTime + 0.6);
+          });
+        } else if (tipo === "cheers") {
+          // Sonido de fanfarria / fiesta de taberna
+          const notas = [523.25, 659.25, 783.99, 1046.50]; // Acorde C Mayor
+          notas.forEach((freq, idx) => {
+            const osc = ctx.createOscillator();
+            const gain = ctx.createGain();
+            osc.type = "triangle";
+            osc.frequency.setValueAtTime(freq, ctx.currentTime + (idx * 0.08));
+            gain.gain.setValueAtTime(0.15, ctx.currentTime + (idx * 0.08));
+            gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + (idx * 0.08) + 0.5);
+            osc.connect(gain);
+            gain.connect(ctx.destination);
+            osc.start(ctx.currentTime + (idx * 0.08));
+            osc.stop(ctx.currentTime + (idx * 0.08) + 0.6);
+          });
+        }
+      } catch (e) {
+        console.warn("Audio synthesis:", e);
+      }
+    }
+
+    function toggleSonido() {
+      state.sonidoHabilitado = !state.sonidoHabilitado;
+      localStorage.setItem("destape_sonido", state.sonidoHabilitado);
+      actualizarBotonSonido();
+      if (state.sonidoHabilitado) reproducirSonido("clink");
+    }
+
+    function actualizarBotonSonido() {
+      const icon = document.getElementById("iconSound");
+      const btn = document.getElementById("btnSoundToggle");
+      if (icon) {
+        icon.setAttribute("data-lucide", state.sonidoHabilitado ? "volume-2" : "volume-x");
+      }
+      if (btn) {
+        btn.classList.toggle("text-stone-500", !state.sonidoHabilitado);
+        btn.classList.toggle("text-amber-400", state.sonidoHabilitado);
+      }
+      if (window.lucide) lucide.createIcons();
+    }
+
+    // --- EFECTO FIESTA (CONFETTI) ---
+    function lanzarFiesta(grande = false) {
+      if (!window.confetti) return;
+      const count = grande ? 80 : 40;
+      window.confetti({
+        particleCount: count,
+        spread: 70,
+        origin: { y: 0.7 },
+        colors: ['#f59e0b', '#fbbf24', '#d97706', '#10b981', '#ffffff']
+      });
+    }
+
+    // --- FORMATEO DE TELÉFONO ---
+    const inputTel = document.getElementById("inputTelefono");
+    if (inputTel) {
+      inputTel.addEventListener("input", (e) => {
+        const clearBtn = document.getElementById("btnClearTel");
+        if (clearBtn) clearBtn.classList.toggle("hidden", !e.target.value);
+
+        // Limpiar solo dígitos
+        let val = e.target.value.replace(/\D/g, "");
+        if (val.length > 8 && val.startsWith("506")) {
+          val = val.slice(3);
+        }
+        if (val.length > 8) val = val.slice(0, 8);
+
+        // Formatear 8888-8888
+        if (val.length > 4) {
+          e.target.value = val.slice(0, 4) + "-" + val.slice(4);
+        } else {
+          e.target.value = val;
+        }
+      });
+    }
+
+    function limpiarTelefono() {
+      if (inputTel) {
+        inputTel.value = "";
+        inputTel.focus();
+        document.getElementById("btnClearTel")?.classList.add("hidden");
+      }
+    }
+
+    // --- ANIMACIÓN DE CONTADOR DE PUNTOS (ODÓMETRO) ---
+    function animarNumero(elemento, fin, duracion = 1200) {
+      if (!elemento) return;
+      let inicio = 0;
+      const pasoTiempo = 20;
+      const pasosTotales = duracion / pasoTiempo;
+      let pasoActual = 0;
+
+      const timer = setInterval(() => {
+        pasoActual++;
+        const progreso = pasoActual / pasosTotales;
+        const factor = 1 - Math.pow(1 - progreso, 4); // Ease out
+        const valorActual = Math.round(inicio + (fin - inicio) * factor);
+        elemento.textContent = valorActual.toLocaleString();
+
+        if (pasoActual >= pasosTotales) {
+          clearInterval(timer);
+          elemento.textContent = fin.toLocaleString();
+        }
+      }, pasoTiempo);
+    }
+
+    // --- CONSULTAR PUNTOS DEL CLIENTE ---
+    async function consultarPuntos(e, forzarRefresco = false) {
+      if (e) e.preventDefault();
+      
+      const telInput = document.getElementById("inputTelefono");
+      let tel = (telInput ? telInput.value : "").replace(/\D/g, "");
+      
+      if (!tel && state.clienteActual) {
+        tel = String(state.clienteActual.telefono).replace(/\D/g, "");
+      }
+
+      if (!tel || tel.length < 8) {
+        mostrarErrorLogin("Por favor escribe tu número de celular completo (8 dígitos).");
+        return;
+      }
+
+      // Recordar celular si está marcado
+      const chk = document.getElementById("chkRecordar");
+      if (chk && chk.checked) {
+        localStorage.setItem("destape_cliente_tel", tel);
+      }
+
+      // UI Estado cargando
+      setLoginCargando(true);
+      reproducirSonido("clink");
+
+      const iconRef = document.getElementById("iconRefresh");
+      if (iconRef) iconRef.classList.add("animate-spin");
+
+      try {
+        let resultado = null;
+
+        // ÚNICA ESTRATEGIA: Consulta segura con token — sin fallbacks que expongan datos
+        if (!state.sheetsUrl) {
+          mostrarErrorLogin("No hay conexión configurada. Abre el portal con el enlace oficial de DC El Destape.");
+          setLoginCargando(false);
+          if (iconRef) iconRef.classList.remove("animate-spin");
+          return;
+        }
+
+        try {
+          const urlConParam = `${state.sheetsUrl}?action=consultarPuntos&token=${PUBLIC_PORTAL_TOKEN}&telefono=${encodeURIComponent(tel)}&t=${Date.now()}`;
+          const res = await fetch(urlConParam);
+          const json = await res.json();
+
+          if (json && json.success && json.data && json.data.encontrado) {
+            resultado = json.data;
+          } else if (json && json.data && json.data.encontrado === false) {
+            mostrarErrorLogin(json.data.mensaje || "No encontramos compras registradas con este número. Con tu primer pedido te registramos 📲 +506 8992-7936");
+            setLoginCargando(false);
+            if (iconRef) iconRef.classList.remove("animate-spin");
+            return;
+          } else {
+            mostrarErrorLogin("No encontramos compras registradas con este número. Con tu primer pedido te registramos 📲 +506 8992-7936");
+            setLoginCargando(false);
+            if (iconRef) iconRef.classList.remove("animate-spin");
+            return;
+          }
+        } catch (apiErr) {
+          console.warn("Error de conexión al consultar puntos:", apiErr);
+          mostrarErrorLogin("Error de conexión. Revisa tu internet e intenta nuevamente.");
+          setLoginCargando(false);
+          if (iconRef) iconRef.classList.remove("animate-spin");
+          return;
+        }
+
+        if (resultado) {
+          state.clienteActual = resultado;
+          renderizarBarraVIP(resultado);
+          cambiarVista("vistaPuntos");
+          lanzarFiesta(true);
+          reproducirSonido("cheers");
+        }
+
+      } catch (err) {
+        console.error("Error al consultar puntos:", err);
+        mostrarErrorLogin("Error de conexión. Revisa tu internet e intenta nuevamente.");
+      } finally {
+        setLoginCargando(false);
+        if (iconRef) iconRef.classList.remove("animate-spin");
+      }
+    }
+
+    // --- RENDERIZADO DE LA BARRA VIP ---
+    function renderizarBarraVIP(cliente) {
+      document.getElementById("clienteNombre").textContent = cliente.nombre;
+      document.getElementById("clienteTelefono").textContent = `📞 ${cliente.telefono}`;
+      document.getElementById("clienteNivelPill").textContent = cliente.nivel.split(" ")[1] || "VIP";
+      document.getElementById("clienteAvatar").textContent = cliente.avatar || "🍺";
+
+      // Puntos y colones equivalentes según configuración
+      animarNumero(document.getElementById("puntosNumero"), cliente.puntos);
+      const equivalCRC = cliente.puntos * state.puntosValorCRC;
+      document.getElementById("puntosEquivCRC").textContent = `₡${equivalCRC.toLocaleString()}`;
+
+      // Rango y barra de progreso
+      document.getElementById("clienteRangoTexto").textContent = `Rango: ${cliente.nivel}`;
+      
+      let meta = 1000;
+      if (cliente.puntos >= 3000) meta = 5000;
+      else if (cliente.puntos >= 1000) meta = 3000;
+      
+      const pct = cliente.puntos >= 5000 ? 100 : Math.min(100, Math.round((cliente.puntos / meta) * 100));
+      document.getElementById("barraProgreso").style.width = `${pct}%`;
+      document.getElementById("clienteProgresoTexto").textContent = `${cliente.puntos.toLocaleString()} / ${meta.toLocaleString()} pts`;
+
+      if (cliente.puntosFaltantes > 0) {
+        document.getElementById("clienteSiguienteNivelInfo").innerHTML = `¡Te faltan <b>${cliente.puntosFaltantes.toLocaleString()} puntos</b> para ascender a <b>${cliente.siguienteNivel}</b>! 🚀`;
+      } else {
+        document.getElementById("clienteSiguienteNivelInfo").innerHTML = `🎉 ¡Perteneces a la élite más alta de la taberna!`;
+      }
+
+      // Botón de WhatsApp personalizado (número correcto de la empresa)
+      const equivalMsg = cliente.puntos * state.puntosValorCRC;
+      const msgWA = `¡Hola DC El Destape! 🍻 Soy ${cliente.nombre} (celular ${cliente.telefono}). Tengo ${cliente.puntos.toLocaleString()} puntos en el Club de la Taberna (equivalen a ₡${equivalMsg.toLocaleString()} de descuento) y me gustaría canjearlos en mi próximo pedido 🎉🍾`;
+      document.getElementById("btnCanjearWhatsApp").href = `https://wa.me/50689927936?text=${encodeURIComponent(msgWA)}`;
+
+      // Última visita
+      const elUlt = document.getElementById("clienteUltimaVisita");
+      if (cliente.ultimaVenta) {
+        try {
+          const d = new Date(cliente.ultimaVenta);
+          elUlt.textContent = `Última compra registrada: ${d.toLocaleDateString('es-CR', { month: 'long', day: 'numeric', year: 'numeric' })}`;
+        } catch (e) {
+          elUlt.textContent = `Última compra registrada: ${cliente.ultimaVenta}`;
+        }
+      } else {
+        elUlt.textContent = "¡Bienvenido a la taberna de DC El Destape!";
+      }
+
+      if (window.lucide) lucide.createIcons();
+    }
+
+    function cambiarVista(vistaId) {
+      document.getElementById("vistaLogin").classList.toggle("hidden", vistaId !== "vistaLogin");
+      document.getElementById("vistaPuntos").classList.toggle("hidden", vistaId !== "vistaPuntos");
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    function cerrarSesionCliente() {
+      reproducirSonido("clink");
+      cambiarVista("vistaLogin");
+    }
+
+    function setLoginCargando(cargando) {
+      document.getElementById("loginCargando")?.classList.toggle("hidden", !cargando);
+      document.getElementById("btnEntrar")?.classList.toggle("hidden", cargando);
+      document.getElementById("loginError")?.classList.add("hidden");
+    }
+
+    function mostrarErrorLogin(msg) {
+      const errBox = document.getElementById("loginError");
+      const errTxt = document.getElementById("loginErrorTexto");
+      if (errBox && errTxt) {
+        errTxt.textContent = msg;
+        errBox.classList.remove("hidden");
+      }
+    }
+
+    // --- INICIALIZACIÓN AL CARGAR ---
+    window.addEventListener("DOMContentLoaded", () => {
+      iniciarBurbujas();
+      detectarApiUrl();
+      actualizarBotonSonido();
+
+      // Si hay un celular guardado previamente, auto-llenarlo
+      const telGuardado = localStorage.getItem("destape_cliente_tel");
+      if (telGuardado && inputTel) {
+        let val = telGuardado.replace(/\D/g, "");
+        if (val.length === 8) {
+          inputTel.value = val.slice(0, 4) + "-" + val.slice(4);
+          document.getElementById("btnClearTel")?.classList.remove("hidden");
+        }
+      }
+
+      if (window.lucide) lucide.createIcons();
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,70 @@
+﻿<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Diagnostico Fotos</title>
+  <style>
+    body { font-family: sans-serif; background: #0f172a; color: #f1f5f9; padding: 16px; }
+    h2 { color: #818cf8; }
+    .card { background: #1e293b; border: 1px solid #334155; border-radius: 12px; padding: 16px; margin-bottom: 16px; }
+    img.test { width: 120px; height: 120px; object-fit: cover; border-radius: 8px; border: 2px solid #334155; background: #334155; display: block; }
+    .label { font-size: 11px; color: #94a3b8; margin-bottom: 4px; }
+    .url { font-size: 10px; color: #64748b; word-break: break-all; margin-top: 4px; }
+    .status { font-size: 14px; font-weight: bold; margin-top: 8px; }
+    .ok { color: #34d399; }
+    .fail { color: #f87171; }
+    input { width: 100%; padding: 10px; border-radius: 8px; background: #0f172a; border: 1px solid #475569; color: white; font-size: 13px; box-sizing: border-box; margin-bottom: 8px; }
+    button { background: #4f46e5; color: white; border: none; padding: 12px 20px; border-radius: 8px; font-size: 14px; cursor: pointer; width: 100%; margin-bottom: 8px; }
+    .row { display: flex; gap: 12px; align-items: flex-start; }
+    .info { flex: 1; }
+  </style>
+</head>
+<body>
+  <h2>Diagnostico de Fotos Drive</h2>
+  <div class="card">
+    <div class="label">Pega el enlace de Google Drive de una foto del producto:</div>
+    <input type="text" id="urlInput" placeholder="https://drive.google.com/file/d/1ABC.../view">
+    <button onclick="diagnosticar()">Probar formatos</button>
+  </div>
+  <div id="resultados"></div>
+  <script>
+    function extraerDriveId(url) {
+      var trimmed = (url || '').trim();
+      var driveId = null;
+      var m1 = trimmed.match(/\/file\/d\/([a-zA-Z0-9_-]+)/);
+      if (m1) driveId = m1[1];
+      if (!driveId) { var m2 = trimmed.match(/[?&]id=([a-zA-Z0-9_-]+)/); if (m2) driveId = m2[1]; }
+      if (!driveId) { var m3 = trimmed.match(/googleusercontent\.com\/d\/([a-zA-Z0-9_-]+)/); if (m3) driveId = m3[1]; }
+      if (!driveId && /^[a-zA-Z0-9_-]{25,50}$/.test(trimmed)) driveId = trimmed;
+      return driveId;
+    }
+    function probarUrl(url, label) {
+      return new Promise(function(resolve) {
+        var card = document.createElement('div'); card.className = 'card';
+        var row = document.createElement('div'); row.className = 'row';
+        var img = document.createElement('img'); img.className = 'test';
+        var info = document.createElement('div'); info.className = 'info';
+        var uid = 's' + Date.now() + Math.random().toString(36).slice(2);
+        info.innerHTML = '<div class="label">' + label + '</div><div class="url">' + url + '</div><div class="status" id="' + uid + '">Cargando...</div>';
+        img.onload = function() { var el = document.getElementById(uid); if(el){el.textContent='OK - Cargo correctamente';el.className='status ok';} resolve({ok:true}); };
+        img.onerror = function() { var el = document.getElementById(uid); if(el){el.textContent='FALLO - No cargo';el.className='status fail';} resolve({ok:false}); };
+        img.src = url;
+        row.appendChild(img); row.appendChild(info); card.appendChild(row);
+        document.getElementById('resultados').appendChild(card);
+      });
+    }
+    async function diagnosticar() {
+      var input = document.getElementById('urlInput').value.trim();
+      if (!input) { alert('Pega una URL primero'); return; }
+      document.getElementById('resultados').innerHTML = '<p style="color:#94a3b8">Probando...</p>';
+      var id = extraerDriveId(input);
+      if (!id) { document.getElementById('resultados').innerHTML = '<div class="card" style="color:#f87171">No se pudo extraer el ID. Pega una URL de Google Drive valida.</div>'; return; }
+      document.getElementById('resultados').innerHTML = '<div class="card" style="color:#818cf8">ID detectado: <b>' + id + '</b></div>';
+      await probarUrl('https://drive.google.com/thumbnail?id=' + id + '&sz=w400', 'Formato 1: thumbnail sz=w400 (el que usa la app)');
+      await probarUrl('https://lh3.googleusercontent.com/d/' + id, 'Formato 2: lh3.googleusercontent.com/d/');
+      await probarUrl('https://drive.google.com/uc?export=view&id=' + id, 'Formato 3: uc?export=view');
+    }
+  </script>
+</body>
+</html>
