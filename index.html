@@ -1,15 +1,14 @@
-<!DOCTYPE html>
-<html lang="es" class="min-h-screen bg-slate-900">
+﻿<!DOCTYPE html>
+<html lang="es" class="min-h-screen bg-slate-950">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-  <title>DC El Destape - Control de Inventario y Ventas</title>
+  <title>DC El Destape - Preventa y Pedidos</title>
   
-  <!-- PWA Meta Tags & Executive Logo Favicon -->
   <meta name="theme-color" content="#0a0d14">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <meta name="apple-mobile-web-app-title" content="El Destape">
+  <meta name="apple-mobile-web-app-title" content="Preventa Destape">
   <link rel="icon" type="image/png" href="logo.png">
   <link rel="apple-touch-icon" href="logo.png">
   <link rel="manifest" href="manifest.json">
@@ -23,13 +22,13 @@
         extend: {
           colors: {
             brand: {
-              50: '#eef2ff',
-              100: '#e0e7ff',
-              500: '#6366f1',
-              600: '#4f46e5',
-              700: '#4338ca',
-              800: '#3730a3',
-              900: '#312e81',
+              50: '#fffbeb',
+              100: '#fef3c7',
+              500: '#f59e0b',
+              600: '#d97706',
+              700: '#b45309',
+              800: '#92400e',
+              900: '#78350f'
             }
           }
         }
@@ -42,75 +41,57 @@
   
   <!-- Lucide Icons -->
   <script src="https://cdn.jsdelivr.net/npm/lucide@0.344.0/dist/umd/lucide.min.js"></script>
-  <script>
-    if (!window.lucide) {
-      document.write('<script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"><\/script>');
-    }
-  </script>
-
-  <!-- HTML5 QR / Barcode Scanner -->
-  <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
-
-  <!-- XLSX Library for Excel Import/Export -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-
-  <!-- Canvas Confetti for sales celebration -->
-  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
-
-  <link rel="stylesheet" href="styles.css?v=20260828_2">
+  
+  <link rel="stylesheet" href="styles.css?v=20260908_01">
 </head>
-<body class="min-h-screen font-['Plus_Jakarta_Sans'] text-slate-100 antialiased select-none overflow-x-hidden" style="padding-bottom: 200px !important;">
+<body class="min-h-screen font-['Plus_Jakarta_Sans'] text-slate-100 antialiased select-none overflow-x-hidden" style="padding-bottom: 120px !important;">
 
   <!-- TOP APP BAR -->
-  <header class="sticky top-0 z-40 bg-slate-900/95 backdrop-blur-md border-b border-slate-800/90 px-3.5 py-2.5 flex items-center justify-between">
+  <header class="sticky top-0 z-40 bg-slate-900/95 backdrop-blur-md border-b border-slate-800/90 px-4 py-2.5 flex items-center justify-between">
     <div class="flex items-center gap-2.5">
       <div class="w-10 h-10 rounded-full border border-amber-500/60 p-0.5 bg-black shadow-md shadow-amber-500/20 shrink-0 overflow-hidden">
         <img src="logo.png" alt="DC El Destape" class="w-full h-full object-cover rounded-full">
       </div>
       <div>
         <div class="flex items-center gap-1.5">
-          <h1 id="appHeaderTitle" class="text-xs font-black text-white leading-tight uppercase tracking-wider">DC El Destape</h1>
-          <span class="text-[9px] font-black text-amber-300 bg-amber-950/80 border border-amber-500/40 px-1.5 py-0.2 rounded-md uppercase">Licores</span>
+          <h1 class="text-xs font-black text-white leading-tight uppercase tracking-wider">DC El Destape</h1>
+          <span class="text-[9px] font-black text-amber-300 bg-amber-950/80 border border-amber-500/40 px-1.5 py-0.2 rounded-md uppercase font-mono">Preventa</span>
         </div>
         <div class="flex items-center gap-2 mt-0.5">
-          <!-- Vendedor Switcher Chip -->
-          <button onclick="abrirModalSeleccionVendedor()" id="btnHeaderVendedor" title="Cambiar Vendedor" class="flex items-center gap-1.5 px-2 py-0.5 rounded-lg bg-indigo-950/80 border border-indigo-500/40 hover:border-indigo-400 text-[11px] font-bold text-indigo-300 shadow-sm active:scale-95 transition-all">
+          <button onclick="abrirModalVendedor()" id="btnHeaderVendedor" class="flex items-center gap-1.5 px-2 py-0.5 rounded-lg bg-amber-950/60 border border-amber-500/40 hover:border-amber-400 text-[11px] font-bold text-amber-300 active:scale-95 transition-all">
             <span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
-            <span id="headerVendedorNombre">Carlos</span>
-            <i data-lucide="chevron-down" class="w-3 h-3 text-slate-400"></i>
+            <span id="headerVendedorNombre">Mi Perfil</span>
+            <i data-lucide="chevron-down" class="w-3 h-3 text-amber-400/80"></i>
           </button>
           <span class="text-[10px] text-slate-500 font-mono">| TC: ₡<span id="headerExchangeRate">520</span></span>
         </div>
       </div>
     </div>
 
-    <!-- Quick actions: Settings, Excel Export & Sync -->
+    <!-- Actions: Config & Sync -->
     <div class="flex items-center gap-1.5">
-      <button onclick="cambiarVista('configuracion')" title="Ajustes y Configuración" class="p-2 rounded-xl bg-slate-800 text-slate-300 hover:text-white active:scale-95 transition-all border border-slate-700/60">
+      <button onclick="abrirModalConfig()" title="Configuración de Enlace Sheets" class="p-2 rounded-xl bg-slate-800 text-slate-300 hover:text-white active:scale-95 transition-all border border-slate-700/60">
         <i data-lucide="settings" class="w-4 h-4"></i>
       </button>
-      <button onclick="exportarLibroExcel()" title="Descargar Excel" class="p-2 rounded-xl bg-emerald-950/60 text-emerald-400 hover:bg-emerald-900 border border-emerald-500/30 active:scale-95 transition-all">
-        <i data-lucide="file-spreadsheet" class="w-4 h-4"></i>
-      </button>
-      <button id="btnSync" onclick="procesarColaSincronizacion(true)" title="Sincronizar con Google Sheets" class="relative p-2 rounded-xl bg-slate-800 text-slate-300 hover:text-white active:scale-95 transition-all border border-slate-700/60">
+      <button id="btnSync" onclick="sincronizarConSheets(true)" title="Sincronizar Datos" class="relative p-2 rounded-xl bg-amber-600/20 text-amber-400 hover:bg-amber-600/30 active:scale-95 transition-all border border-amber-500/40">
         <i data-lucide="refresh-cw" class="w-4 h-4" id="syncIcon"></i>
-        <span id="syncPendingBadge" class="hidden absolute -top-1.5 -right-1.5 min-w-[18px] h-[18px] px-1 bg-amber-500 text-slate-950 font-black text-[10px] rounded-full shadow-lg flex items-center justify-center animate-pulse">0</span>
+        <span id="syncBadge" class="hidden absolute -top-1.5 -right-1.5 min-w-[18px] h-[18px] px-1 bg-amber-500 text-slate-950 font-black text-[10px] rounded-full shadow-lg flex items-center justify-center animate-pulse">0</span>
       </button>
     </div>
   </header>
 
-  <!-- OFFLINE / SYNC STATUS BANNER -->
+  <!-- OFFLINE BANNER -->
   <div id="offlineSyncBanner" class="hidden max-w-md mx-auto px-3.5 py-1.5 mt-2 bg-amber-950/80 border border-amber-500/40 rounded-xl text-amber-200 text-xs font-bold flex items-center justify-between shadow-lg">
     <div class="flex items-center gap-2">
       <span class="w-2 h-2 rounded-full bg-amber-400 animate-ping"></span>
-      <span id="offlineSyncText">Modo Offline: Cambios guardados localmente</span>
+      <span>Modo Offline: Cambios guardados localmente</span>
     </div>
-    <button onclick="procesarColaSincronizacion(true)" class="px-2 py-0.5 bg-amber-500 text-slate-950 text-[10px] font-black rounded-md hover:bg-amber-400 active:scale-95 transition-all">
+    <button onclick="sincronizarConSheets(true)" class="px-2 py-0.5 bg-amber-500 text-slate-950 text-[10px] font-black rounded-md hover:bg-amber-400 active:scale-95">
       Subir ahora
     </button>
   </div>
 
-  <!-- NOTIFICATION TOAST -->
+  <!-- TOAST -->
   <div id="toast" class="fixed top-16 left-1/2 -translate-x-1/2 z-50 transition-all duration-300 transform -translate-y-20 opacity-0 pointer-events-none max-w-[90vw] w-auto">
     <div class="px-4 py-3 rounded-2xl shadow-2xl flex items-center gap-3 text-sm font-medium border" id="toastBox">
       <i data-lucide="info" class="w-5 h-5 shrink-0" id="toastIcon"></i>
@@ -118,2341 +99,435 @@
     </div>
   </div>
 
-  <!-- MAIN VIEWS CONTAINER -->
-  <main class="max-w-md mx-auto p-4 pb-36 space-y-4">
+  <!-- MAIN CONTAINER -->
+  <main class="max-w-md mx-auto p-4 pb-28 space-y-4">
 
-    <!-- ============================================================== -->
-    <!-- VIEW 1: DASHBOARD (RESUMEN BI-MONETARIO)                      -->
-    <!-- ============================================================== -->
-    <section id="viewDashboard" class="space-y-3.5 active-view">
-      
-      <!-- Executive Brand Banner Card -->
-      <div class="bg-gradient-to-r from-slate-900 via-slate-800/90 to-slate-900 border border-amber-500/30 rounded-3xl p-3 shadow-xl flex items-center justify-between relative overflow-hidden">
-        <div class="absolute -right-5 -bottom-5 w-24 h-24 bg-amber-500/10 rounded-full blur-xl pointer-events-none"></div>
-        <div class="flex items-center gap-3 relative z-10">
-          <div class="w-12 h-12 rounded-full border border-amber-400/60 p-0.5 bg-black shadow-md shadow-amber-500/20 shrink-0">
-            <img src="logo.png" alt="DC El Destape" class="w-full h-full object-cover rounded-full">
-          </div>
-          <div>
-            <div class="flex items-center gap-1.5">
-              <h2 class="text-sm font-black text-white tracking-wide">DC EL DESTAPE</h2>
-              <span class="text-[9px] font-black uppercase px-1.5 py-0.2 rounded-md bg-amber-400/20 text-amber-300 border border-amber-400/40 font-mono">Licores</span>
-            </div>
-            <p class="text-[11px] text-slate-400 font-medium">Control Ejecutivo • Carlos & Daniel</p>
-            <div class="text-[10px] text-amber-400/90 font-mono font-bold flex items-center gap-1 mt-0.5">
-              <i data-lucide="phone" class="w-3 h-3 text-amber-400"></i>
-              <span>+506 8992-7936</span>
-            </div>
-          </div>
-        </div>
+    <!-- VIEW 1: PRODUCTOS -->
+    <section id="viewProductos" class="space-y-3.5">
+      <div class="relative">
+        <i data-lucide="search" class="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400"></i>
+        <input type="text" id="searchProductos" oninput="filtrarProductos()" placeholder="Buscar licor por nombre o categoría..." 
+          class="w-full pl-10 pr-4 py-2.5 bg-slate-900 border border-slate-700/80 rounded-2xl text-sm text-white placeholder-slate-400 focus:outline-none focus:border-amber-500 transition-all shadow-inner">
       </div>
 
-      <!-- Multi-Seller View Switcher Tab in Dashboard (Carlos / Daniel / Consolidado) -->
-      <div class="grid grid-cols-3 gap-1 bg-slate-950/80 p-1 rounded-2xl border border-slate-800 text-xs font-bold font-mono">
-        <button id="dashTabVendedor-Carlos" onclick="cambiarVistaVendedor('Carlos')" class="py-2 rounded-xl bg-indigo-600 text-white shadow-md flex items-center justify-center gap-1 active:scale-95 transition-all">
-          <span class="w-2 h-2 rounded-full bg-blue-400"></span>
-          <span>Carlos</span>
-        </button>
-        <button id="dashTabVendedor-Daniel" onclick="cambiarVistaVendedor('Daniel')" class="py-2 rounded-xl bg-transparent text-slate-400 hover:text-white flex items-center justify-center gap-1 active:scale-95 transition-all">
-          <span class="w-2 h-2 rounded-full bg-violet-400"></span>
-          <span>Daniel</span>
-        </button>
-        <button id="dashTabVendedor-Consolidado" onclick="cambiarVistaVendedor('Consolidado')" class="py-2 rounded-xl bg-transparent text-slate-400 hover:text-white flex items-center justify-center gap-1 active:scale-95 transition-all">
-          <span class="w-2 h-2 rounded-full bg-amber-400"></span>
-          <span>Total</span>
-        </button>
-      </div>
-
-      <!-- Metrics Overview Cards (CRC Principal, USD Referencia) -->
-      <div class="grid grid-cols-2 gap-3">
-        
-        <!-- Metric 1: Valor a Costo -->
-        <div class="bg-gradient-to-br from-slate-800 to-slate-900 border border-slate-700/80 rounded-2xl p-3.5 relative overflow-hidden shadow-lg">
-          <div class="flex items-center justify-between text-slate-400 mb-1">
-            <span class="text-[10px] font-bold uppercase tracking-wider">Valor a Costo</span>
-            <i data-lucide="calculator" class="w-3.5 h-3.5 text-slate-400"></i>
-          </div>
-          <div class="text-base font-black text-white font-mono" id="dashCostoCRC">₡0</div>
-          <div class="text-xs text-slate-500 font-mono" id="dashCostoUSD">$0.00</div>
-        </div>
-
-        <!-- Metric 2: Valor a Precio Venta -->
-        <div class="bg-gradient-to-br from-teal-950/40 to-slate-900 border border-teal-500/30 rounded-2xl p-3.5 relative overflow-hidden shadow-lg">
-          <div class="flex items-center justify-between text-teal-400 mb-1">
-            <span class="text-[10px] font-bold uppercase tracking-wider">Valor a Venta</span>
-            <i data-lucide="trending-up" class="w-3.5 h-3.5"></i>
-          </div>
-          <div class="text-base font-black text-teal-300 font-mono" id="dashVentaCRC">₡0</div>
-          <div class="text-xs text-slate-500 font-mono" id="dashVentaUSD">$0.00</div>
-        </div>
-
-        <!-- Metric 3: Margen Potencial -->
-        <div class="bg-gradient-to-br from-amber-950/40 to-slate-900 border border-amber-500/30 rounded-2xl p-3.5 relative overflow-hidden shadow-lg">
-          <div class="flex items-center justify-between text-amber-400 mb-1">
-            <span class="text-[10px] font-bold uppercase tracking-wider">Margen Potencial</span>
-            <i data-lucide="badge-percent" class="w-3.5 h-3.5"></i>
-          </div>
-          <div class="text-base font-black text-amber-300 font-mono" id="dashMargenCRC">₡0</div>
-          <div class="text-xs text-slate-500 font-mono" id="dashMargenUSD">$0.00</div>
-        </div>
-
-        <!-- Metric 4: Existencias y Unidades -->
-        <div class="bg-gradient-to-br from-indigo-950/40 to-slate-900 border border-indigo-500/30 rounded-2xl p-3.5 relative overflow-hidden shadow-lg">
-          <div class="flex items-center justify-between text-indigo-400 mb-1">
-            <span class="text-[10px] font-bold uppercase tracking-wider">Existencias</span>
-            <i data-lucide="boxes" class="w-3.5 h-3.5"></i>
-          </div>
-          <div class="text-base font-black text-white font-mono"><span id="dashTotalUnidades">0</span> <span class="text-xs font-normal text-slate-400">unids</span></div>
-          <div class="text-xs text-slate-500 font-mono"><span id="dashProdsConStock">0</span> con stock</div>
-        </div>
-      </div>
-
-      <!-- Quick Actions Bar -->
-      <div class="grid grid-cols-4 gap-1.5">
-        <button onclick="cambiarVista('ventas')" class="flex flex-col items-center justify-center p-2.5 rounded-2xl bg-gradient-to-b from-indigo-600 to-indigo-700 text-white shadow-lg shadow-indigo-600/30 active:scale-95 transition-all">
-          <i data-lucide="shopping-cart" class="w-4 h-4 mb-1"></i>
-          <span class="text-[10px] font-bold">Vender</span>
-        </button>
-        <button onclick="cambiarVista('cuentas')" class="flex flex-col items-center justify-center p-2.5 rounded-2xl bg-rose-950/70 border border-rose-500/40 text-rose-300 active:scale-95 transition-all hover:bg-rose-900/80">
-          <i data-lucide="badge-dollar-sign" class="w-4 h-4 mb-1 text-rose-400"></i>
-          <span class="text-[10px] font-bold">Cuentas</span>
-        </button>
-        <button onclick="cambiarVista('compras')" class="flex flex-col items-center justify-center p-2.5 rounded-2xl bg-slate-800 border border-slate-700 text-slate-200 active:scale-95 transition-all hover:bg-slate-750">
-          <i data-lucide="truck" class="w-4 h-4 mb-1 text-emerald-400"></i>
-          <span class="text-[10px] font-bold">Compra</span>
-        </button>
-        <button onclick="abrirModalProducto()" class="flex flex-col items-center justify-center p-2.5 rounded-2xl bg-slate-800 border border-slate-700 text-slate-200 active:scale-95 transition-all hover:bg-slate-750">
-          <i data-lucide="plus-circle" class="w-4 h-4 mb-1 text-amber-400"></i>
-          <span class="text-[10px] font-bold">+ Licor</span>
-        </button>
-      </div>
-
-      <!-- Widget Resumen Cuentas Pendientes en Dashboard -->
-      <div id="dashCuentasWidget" onclick="cambiarVista('cuentas')" class="bg-gradient-to-r from-slate-900 via-rose-950/20 to-slate-900 border border-rose-500/30 hover:border-rose-500/60 rounded-2xl p-3 shadow-lg cursor-pointer active:scale-[0.99] transition-all">
-        <div class="flex items-center justify-between mb-2">
-          <div class="flex items-center gap-2">
-            <div class="p-1.5 rounded-lg bg-rose-500/20 text-rose-400">
-              <i data-lucide="badge-dollar-sign" class="w-4 h-4"></i>
-            </div>
-            <div>
-              <h3 class="text-xs font-bold text-white uppercase tracking-wider">Cuentas Pendientes</h3>
-              <span class="text-[10px] text-slate-400">Créditos de clientes y deudas</span>
-            </div>
-          </div>
-          <span class="text-[10px] text-rose-300 font-bold flex items-center gap-0.5">
-            Ver todas <i data-lucide="chevron-right" class="w-3 h-3"></i>
-          </span>
-        </div>
-        <div class="grid grid-cols-2 gap-2 pt-1 border-t border-slate-800 font-mono text-xs">
-          <div class="bg-slate-950/60 p-2 rounded-xl border border-slate-800">
-            <div class="text-[10px] text-slate-400 font-sans">Por Cobrar (Clientes):</div>
-            <div class="text-xs font-black text-emerald-400" id="dashCobrarCRC">₡0</div>
-            <div class="text-[9px] text-slate-400 font-sans leading-tight mt-0.5" id="dashCobrarNetoSub"></div>
-          </div>
-          <div class="bg-slate-950/60 p-2 rounded-xl border border-slate-800">
-            <div class="text-[10px] text-slate-400 font-sans">Por Pagar (Proveed.):</div>
-            <div class="text-xs font-black text-rose-400" id="dashPagarCRC">₡0</div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Pedidos Pendientes de Clientes (Consolidado para Proveedor) -->
-      <div id="dashPedidosContainer" class="bg-gradient-to-br from-amber-950/30 via-slate-900 to-slate-900 border border-amber-500/40 rounded-2xl p-4 space-y-3 shadow-xl">
-        <div class="flex items-center justify-between border-b border-amber-500/20 pb-2">
-          <div class="flex items-center gap-2">
-            <div class="p-1.5 rounded-lg bg-amber-500/20 text-amber-400">
-              <i data-lucide="clipboard-list" class="w-4 h-4"></i>
-            </div>
-            <div>
-              <h2 class="text-xs font-bold text-amber-300 uppercase tracking-wider">Encargos de Clientes</h2>
-              <p class="text-[10px] text-slate-400">Para pedir al proveedor</p>
-            </div>
-          </div>
-          <span id="dashPedidosBadge" class="text-[11px] font-bold font-mono px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/30">0 pendientes</span>
-        </div>
-
-        <!-- Consolidado de Botellas a Pedir -->
-        <div id="dashConsolidadoBox" class="bg-slate-950/80 border border-amber-500/30 rounded-xl p-3 space-y-2">
-          <div class="flex items-center justify-between">
-            <span class="text-[11px] font-bold text-slate-300 flex items-center gap-1">
-              <i data-lucide="boxes" class="w-3.5 h-3.5 text-amber-400"></i>
-              Consolidado para el Proveedor:
-            </span>
-            <button type="button" onclick="copiarPedidoProveedorTexto()" class="text-[10px] font-bold px-2 py-1 bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 rounded-lg border border-amber-500/40 flex items-center gap-1 active:scale-95 transition-all">
-              <i data-lucide="copy" class="w-3 h-3"></i>
-              <span>Copiar Lista</span>
-            </button>
-          </div>
-          <div id="dashConsolidadoLista" class="text-xs font-mono text-amber-200 divide-y divide-slate-800">
-            <!-- Renderizado por JS -->
-          </div>
-        </div>
-
-        <!-- Lista Detallada de Pedidos por Cliente -->
-        <div class="space-y-2">
-          <div class="flex items-center justify-between text-[11px] text-slate-400 font-semibold">
-            <span>Detalle de Clientes con Encargo:</span>
-            <span class="text-[10px] text-slate-500">Toca ✅ cuando ya lo compraste</span>
-          </div>
-          <div id="dashPedidosList" class="space-y-2 max-h-56 overflow-y-auto">
-            <!-- Renderizado por JS -->
-          </div>
-        </div>
-      </div>
-
-      <!-- Recent Sales / Activity -->
-      <div class="bg-slate-800/60 border border-slate-800 rounded-2xl p-4 space-y-3">
-        <div class="flex items-center justify-between">
-          <h2 class="text-xs font-bold text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
-            <i data-lucide="history" class="w-4 h-4 text-indigo-400"></i>
-            <span>Últimos Movimientos</span>
-          </h2>
-          <button onclick="cambiarVista('ventas')" class="text-xs text-indigo-400 font-semibold hover:underline flex items-center gap-0.5">
-            <span>Ver TPV</span>
-            <i data-lucide="arrow-right" class="w-3.5 h-3.5"></i>
-          </button>
-        </div>
-
-        <!-- Sub-pestañas: Pendientes por Cobrar vs Todos -->
-        <div class="grid grid-cols-2 gap-1.5 bg-slate-950/80 p-1 rounded-xl border border-slate-800 text-[11px] font-bold font-mono">
-          <button id="tabDashMov-pendientes" onclick="cambiarFiltroMovimientosDashboard('pendientes')" class="py-1.5 rounded-lg bg-amber-500/20 text-amber-300 border border-amber-500/40 shadow-sm flex items-center justify-center gap-1.5 active:scale-95 transition-all">
-            <span class="w-2 h-2 rounded-full bg-amber-400 animate-pulse"></span>
-            <span>Por Cobrar (<span id="dashMovPendientesCount">0</span>)</span>
-          </button>
-          <button id="tabDashMov-todos" onclick="cambiarFiltroMovimientosDashboard('todos')" class="py-1.5 rounded-lg bg-transparent text-slate-400 border border-transparent hover:text-white flex items-center justify-center gap-1.5 active:scale-95 transition-all">
-            <i data-lucide="list" class="w-3.5 h-3.5"></i>
-            <span>Todos (<span id="dashMovTodosCount">0</span>)</span>
-          </button>
-        </div>
-
-        <div id="dashRecentSales" class="divide-y divide-slate-750/60 space-y-2">
-          <!-- Rendered by JS -->
-        </div>
-      </div>
-
-      <!-- Extra spacer for mobile bottom navigation -->
-      <div style="height: 120px; width: 100%;" class="w-full block"></div>
-    </section>
-
-    <!-- ============================================================== -->
-    <!-- VIEW 2: PRODUCTOS / CATÃLOGO                                   -->
-    <!-- ============================================================== -->
-    <section id="viewInventario" class="space-y-3 hidden">
-      
-      <!-- Multi-Seller View Switcher Tab (Carlos / Daniel / Consolidado) -->
-      <div class="grid grid-cols-3 gap-1 bg-slate-950/80 p-1 rounded-2xl border border-slate-800 text-xs font-bold font-mono">
-        <button id="tabVendedor-Carlos" onclick="cambiarVistaVendedor('Carlos')" class="py-2 rounded-xl bg-indigo-600 text-white shadow-md flex items-center justify-center gap-1 active:scale-95 transition-all">
-          <span class="w-2 h-2 rounded-full bg-blue-400"></span>
-          <span>Carlos</span>
-        </button>
-        <button id="tabVendedor-Daniel" onclick="cambiarVistaVendedor('Daniel')" class="py-2 rounded-xl bg-transparent text-slate-400 hover:text-white flex items-center justify-center gap-1 active:scale-95 transition-all">
-          <span class="w-2 h-2 rounded-full bg-violet-400"></span>
-          <span>Daniel</span>
-        </button>
-        <button id="tabVendedor-Consolidado" onclick="cambiarVistaVendedor('Consolidado')" class="py-2 rounded-xl bg-transparent text-slate-400 hover:text-white flex items-center justify-center gap-1 active:scale-95 transition-all">
-          <span class="w-2 h-2 rounded-full bg-amber-400"></span>
-          <span>Total</span>
-        </button>
-      </div>
-
-      <!-- Search & Barcode Scan Bar -->
-      <div class="flex items-center gap-2">
-        <div class="relative flex-1">
-          <i data-lucide="search" class="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400"></i>
-          <input type="text" id="searchInventory" oninput="filtrarInventario()" placeholder="Buscar por nombre, código o categoría..." class="w-full pl-10 pr-4 py-2.5 bg-slate-800/90 border border-slate-700/80 rounded-2xl text-sm text-white placeholder-slate-400 focus:outline-none focus:border-indigo-500 transition-all">
-        </div>
-        <button onclick="abrirEscaner('buscar')" title="Escanear Código" class="p-2.5 bg-indigo-600 hover:bg-indigo-500 active:scale-95 text-white rounded-2xl shadow-lg shadow-indigo-600/30 transition-all">
-          <i data-lucide="scan-barcode" class="w-5 h-5"></i>
-        </button>
-        <button onclick="abrirModalExportarCatalogo()" title="Compartir Lista de Precios por WhatsApp" class="px-3 py-2 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white rounded-2xl active:scale-95 shadow-md shadow-emerald-600/25 transition-all flex items-center gap-1.5 font-bold text-xs shrink-0">
-          <i data-lucide="share-2" class="w-4 h-4"></i>
-          <span class="hidden xs:inline">Lista</span>
-        </button>
-        <button onclick="abrirModalProducto()" title="Agregar Licor" class="p-2.5 bg-slate-800 border border-slate-700 text-slate-200 rounded-2xl active:scale-95 transition-all">
-          <i data-lucide="plus" class="w-5 h-5"></i>
-        </button>
-      </div>
-      <!-- Quick Stock Filter Chips (Todos / Con Stock / Agotados) -->
-      <div class="grid grid-cols-3 gap-1.5 text-[11px] font-bold font-mono">
-        <button id="filterStock-todos" onclick="filtrarEstadoStock('todos')" class="py-1.5 px-2 rounded-xl bg-indigo-600 text-white text-center border border-indigo-500/40 shadow-sm active:scale-95 transition-all">
-          Todos (<span id="countStockTodos">0</span>)
-        </button>
-        <button id="filterStock-constock" onclick="filtrarEstadoStock('constock')" class="py-1.5 px-2 rounded-xl bg-slate-800 text-emerald-400 text-center border border-slate-700 shadow-sm active:scale-95 transition-all">
-          📦 Stock (<span id="countStockCon">0</span>)
-        </button>
-        <button id="filterStock-agotados" onclick="filtrarEstadoStock('agotados')" class="py-1.5 px-2 rounded-xl bg-slate-800 text-rose-400 text-center border border-slate-700 shadow-sm active:scale-95 transition-all">
-          🚫 Agotados (<span id="countStockSin">0</span>)
-        </button>
-      </div>
-
-      <!-- Categories Filter Pills Bar -->
       <div id="categoryPills" class="flex gap-1.5 overflow-x-auto pb-1 no-scrollbar text-xs font-medium">
-        <button onclick="filtrarCategoria('Todas')" class="cat-pill active px-3 py-1.5 rounded-full shrink-0">Todas</button>
+        <button onclick="filtrarCategoria('Todas')" class="cat-pill active px-3.5 py-1.5 rounded-full shrink-0">Todas</button>
       </div>
 
-      <!-- Filter count and Sort -->
-      <div class="flex items-center justify-between text-xs text-slate-400 px-1">
-        <span>Catálogo (<span id="inventarioVendedorLabel" class="text-indigo-400 font-bold">Carlos</span>): <b id="prodCount" class="text-white">0</b></span>
-        <button onclick="ordenarProductos()" class="flex items-center gap-1 hover:text-white font-medium">
-          <i data-lucide="arrow-up-down" class="w-3.5 h-3.5"></i>
+      <div class="flex items-center justify-between text-xs text-slate-400 px-1 font-mono">
+        <span>Catálogo disponible: <b id="prodCount" class="text-amber-400">0</b> licores</span>
+        <button onclick="cambiarOrden()" class="flex items-center gap-1 hover:text-white font-medium text-[11px]">
+          <i data-lucide="arrow-up-down" class="w-3.5 h-3.5 text-slate-400"></i>
           <span id="sortLabel">A-Z</span>
         </button>
       </div>
 
-      <!-- Products Grid -->
-      <div id="productsList" class="space-y-2.5">
-        <!-- Rendered by JS -->
-      </div>
-
-      <!-- Extra spacer for mobile bottom navigation -->
-      <div style="height: 120px; width: 100%;" class="w-full block"></div>
+      <div id="productosList" class="space-y-2.5"></div>
     </section>
 
-    <!-- ============================================================== -->
-    <!-- VIEW 3: COMPRAS / ENTRADAS (REABASTECIMIENTO)                  -->
-    <!-- ============================================================== -->
-    <section id="viewCompras" class="space-y-4 hidden">
-      <div class="bg-slate-800/90 border border-slate-700/80 rounded-2xl p-4 space-y-4">
-        <div class="flex items-center justify-between border-b border-slate-700 pb-3">
-          <h2 class="text-sm font-bold text-white flex items-center gap-2">
-            <i data-lucide="truck" class="w-4 h-4 text-emerald-400"></i>
-            Registrar Compra / Entrada
-          </h2>
-          <button onclick="abrirEscaner('compra')" class="flex items-center gap-1.5 px-2.5 py-1 bg-emerald-600/20 text-emerald-400 border border-emerald-500/30 rounded-xl text-xs font-bold active:scale-95">
-            <i data-lucide="scan-barcode" class="w-3.5 h-3.5"></i>
-            Escanear
-          </button>
-        </div>
-
-        <div class="space-y-3 text-xs">
-          <!-- Vendedor Asignado a la compra -->
-          <div class="grid grid-cols-2 gap-2">
-            <div>
-              <label class="block font-semibold text-slate-300 mb-1">Asignar Stock A *</label>
-              <select id="compraVendedor" class="w-full px-2.5 py-2.5 bg-slate-900 border border-indigo-500/40 rounded-xl text-white font-bold text-xs focus:outline-none focus:border-indigo-400">
-                <option value="Carlos">👤 Carlos</option>
-                <option value="Daniel">👤 Daniel</option>
-              </select>
-            </div>
-            <div>
-              <label class="block font-semibold text-slate-300 mb-1">¿Quién Pagó / Financió? *</label>
-              <select id="compraFinanciadoPor" class="w-full px-2.5 py-2.5 bg-slate-900 border border-emerald-500/40 rounded-xl text-white font-bold text-xs focus:outline-none focus:border-emerald-400">
-                <option value="Carlos">👤 Carlos (Dinero propio)</option>
-                <option value="Daniel">👤 Daniel (Dinero propio)</option>
-                <option value="Empresa">🏢 Empresa (Caja General)</option>
-              </select>
-            </div>
-          </div>
-
-          <!-- Product Selector Searchable Input -->
-          <div class="relative" onclick="document.addEventListener('click', cerrarDropdownProductosCompra, {once:true})">
-            <label class="block font-semibold text-slate-300 mb-1">Buscar Licor para Agregar a la Compra</label>
-            
-            <!-- Campo de búsqueda escribible -->
-            <div id="compraInputWrapper" class="relative">
-              <i data-lucide="search" class="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"></i>
-              <input type="text" id="compraProductoBusqueda" oninput="filtrarProductosCompra(this.value)" onfocus="filtrarProductosCompra(this.value)" placeholder="Escribe el nombre o código del licor..." autocomplete="off"
-                class="w-full pl-9 pr-3 py-2.5 bg-slate-900 border border-slate-700 rounded-xl text-xs text-white placeholder-slate-500 focus:outline-none focus:border-emerald-500">
-            </div>
-
-            <!-- Dropdown flotante de sugerencias -->
-            <div id="compraProductoSugerencias" class="hidden absolute top-full mt-1 left-0 right-0 z-50 bg-slate-800 border border-emerald-500/40 rounded-2xl shadow-2xl overflow-hidden divide-y divide-slate-700/50 max-h-56 overflow-y-auto"></div>
-          </div>
-
-          <!-- Formulario rápido para añadir producto a la lista de compra -->
-          <div id="compraItemEditor" class="p-3 bg-slate-950/70 rounded-2xl border border-slate-800 space-y-2.5 hidden">
-            <div class="flex items-center justify-between">
-              <div class="flex items-center gap-2 min-w-0 flex-1">
-                <span id="compraItemEditorImg" class="text-sm">🍷</span>
-                <span id="compraItemEditorNombre" class="text-xs font-bold text-white truncate"></span>
-              </div>
-              <button type="button" onclick="cancelarItemCompra()" class="text-[11px] text-slate-400 hover:text-rose-400 font-bold">✕ Cancelar</button>
-            </div>
-
-            <input type="hidden" id="compraItemEditorCodigo">
-
-            <div class="grid grid-cols-3 gap-2">
-              <div>
-                <label class="block text-[11px] font-semibold text-slate-400 mb-1">Cantidad *</label>
-                <input type="number" id="compraItemEditorCantidad" min="1" value="1" oninput="calcularSubtotalItemCompra()" class="w-full px-2.5 py-1.5 bg-slate-900 border border-slate-700 rounded-xl text-white font-mono font-bold text-xs">
-              </div>
-              <div>
-                <label class="block text-[11px] font-semibold text-slate-400 mb-1">Costo USD ($)</label>
-                <input type="number" step="0.01" id="compraItemEditorCostoUSD" value="0" oninput="autoConvertirItemCompraCosto('USD')" class="w-full px-2.5 py-1.5 bg-slate-900 border border-slate-700 rounded-xl text-white font-mono font-bold text-xs">
-              </div>
-              <div>
-                <label class="block text-[11px] font-semibold text-slate-400 mb-1">Costo CRC (₡)</label>
-                <input type="number" step="1" id="compraItemEditorCostoCRC" value="0" oninput="autoConvertirItemCompraCosto('CRC')" class="w-full px-2.5 py-1.5 bg-slate-900 border border-slate-700 rounded-xl text-white font-mono font-bold text-xs">
-              </div>
-            </div>
-
-            <button type="button" onclick="agregarItemAListaCompra()" class="w-full py-2 bg-indigo-600 hover:bg-indigo-500 text-white font-bold rounded-xl text-xs active:scale-95 transition-all flex items-center justify-center gap-1.5 shadow-md">
-              <i data-lucide="plus-circle" class="w-3.5 h-3.5"></i>
-              <span>Agregar a la Lista de Compra</span>
-            </button>
-          </div>
-
-          <!-- Lista de Productos en la Compra Actual (Multi-producto) -->
-          <div class="space-y-2">
-            <div class="flex items-center justify-between border-b border-slate-700/60 pb-1.5">
-              <span class="text-xs font-bold uppercase tracking-wider text-slate-300 flex items-center gap-1.5">
-                <i data-lucide="layers" class="w-3.5 h-3.5 text-emerald-400"></i>
-                Licores en esta Compra (<span id="compraListaCount">0</span>)
-              </span>
-              <button type="button" onclick="vaciarListaCompra()" class="text-[11px] text-rose-400 hover:text-rose-300 font-semibold">Vaciar</button>
-            </div>
-            
-            <div id="compraListaItems" class="space-y-2 min-h-[50px] max-h-[220px] overflow-y-auto">
-              <!-- Renderizado por JS -->
-            </div>
-          </div>
-
-          <!-- Date, Exchange Rate, Supplier and Notes -->
-          <div class="grid grid-cols-2 gap-3 pt-2 border-t border-slate-700">
-            <div>
-              <label class="block font-semibold text-slate-300 mb-1">Fecha de Compra</label>
-              <input type="date" id="compraFecha" class="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-xl text-white font-mono text-xs">
-            </div>
-            <div>
-              <label class="block font-semibold text-slate-300 mb-1">Tipo de Cambio (₡)</label>
-              <input type="number" step="1" id="compraTipoCambio" value="520" oninput="recalcularTotalesListaCompra()" class="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-xl text-white font-mono font-bold text-xs">
-            </div>
-          </div>
-
-          <div class="grid grid-cols-2 gap-3">
-            <div>
-              <label class="block font-semibold text-slate-300 mb-1">Proveedor (Opcional)</label>
-              <input type="text" id="compraProveedor" placeholder="Ej. Distribuidora Central" class="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-xl text-white text-xs">
-            </div>
-            <div>
-              <label class="block font-semibold text-slate-300 mb-1">Notas / Factura</label>
-              <input type="text" id="compraNotas" placeholder="Ej. Factura #4092" class="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-xl text-white text-xs">
-            </div>
-          </div>
-
-          <!-- Costo de Envío / Flete de la Compra -->
-          <div class="bg-slate-900/90 border border-slate-700/80 rounded-xl p-2.5 space-y-1.5">
-            <div class="flex items-center justify-between">
-              <span class="text-xs font-semibold text-slate-300 flex items-center gap-1.5">
-                <i data-lucide="truck" class="w-3.5 h-3.5 text-indigo-400"></i>
-                <span>Costo de Envío / Flete Compra (₡)</span>
-              </span>
-              <span class="text-[10px] text-slate-400 font-mono">Suma al gasto</span>
-            </div>
-            <div class="flex items-center gap-2">
-              <input type="number" id="compraEnvioCRC" min="0" step="100" value="0" oninput="recalcularTotalesListaCompra()" placeholder="₡0"
-                class="w-full px-3 py-1.5 bg-slate-950 border border-slate-700 rounded-lg text-white font-mono font-bold text-xs focus:border-indigo-500">
-            </div>
-            <p class="text-[9.5px] text-slate-400 leading-tight">
-              🚚 Se suma a la inversión total de la compra (Productos + Envío).
-            </p>
-          </div>
-
-          <!-- Estado de Pago de la Compra -->
-          <div class="p-2.5 bg-slate-900/90 border border-slate-700/80 rounded-xl flex items-center justify-between">
-            <div class="flex items-center gap-2">
-              <i data-lucide="credit-card" class="w-4 h-4 text-amber-400"></i>
-              <span class="text-xs text-slate-300 font-semibold">¿Compra a crédito / pago pendiente?</span>
-            </div>
-            <label class="relative inline-flex items-center cursor-pointer">
-              <input type="checkbox" id="compraEsCredito" class="sr-only peer">
-              <div class="w-9 h-5 bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-amber-600"></div>
-            </label>
-          </div>
-
-          <!-- Total Calculation -->
-          <div class="p-3 bg-slate-900 rounded-xl border border-emerald-500/30 flex items-center justify-between font-mono">
-            <span class="text-slate-300 font-semibold text-xs">Inversión Total de la Compra:</span>
-            <div class="text-right">
-              <div class="text-base font-black text-emerald-400" id="compraTotalCRCDisplay">₡0</div>
-              <div class="text-xs text-slate-400" id="compraTotalUSDDisplay">$0.00 USD</div>
-            </div>
-          </div>
-
-          <button onclick="guardarCompra()" class="w-full py-3.5 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-bold rounded-xl shadow-lg shadow-emerald-600/30 active:scale-95 transition-all flex items-center justify-center gap-2 text-sm">
-            <i data-lucide="check-circle" class="w-5 h-5"></i>
-            Guardar Toda la Compra en Inventario
-          </button>
-        </div>
-      </div>
-
-      <!-- Recent Purchases List -->
-      <div class="bg-slate-800/60 border border-slate-800 rounded-2xl p-4">
-        <h3 class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3">Historial de Compras (<span id="comprasCount">0</span>)</h3>
-        <div id="comprasHistorialList" class="space-y-2 text-xs">
-          <!-- Rendered by JS -->
-        </div>
-      </div>
-
-      <!-- Extra spacer for mobile bottom navigation -->
-      <div style="height: 120px; width: 100%;" class="w-full block"></div>
-    </section>
-
-    <!-- ============================================================== -->
-    <!-- VIEW 4: VENTAS / PUNTO DE VENTA (POS TÃCTIL)                   -->
-    <!-- ============================================================== -->
-    <section id="viewVentas" class="space-y-3 hidden">
-      
-      <!-- Top Action: Quick Search & Scan -->
-      <div class="flex items-center gap-2">
-        <div class="relative flex-1">
-          <i data-lucide="search" class="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400"></i>
-          <input type="text" id="searchPos" oninput="filtrarPosProductos()" placeholder="Agregar licor a la venta..." class="w-full pl-10 pr-4 py-2.5 bg-slate-800 border border-slate-700 rounded-2xl text-sm text-white placeholder-slate-400 focus:outline-none focus:border-indigo-500">
-        </div>
-        <button onclick="abrirEscaner('venta')" class="px-3.5 py-2.5 bg-gradient-to-r from-indigo-600 to-violet-600 text-white rounded-2xl shadow-lg shadow-indigo-600/30 font-bold text-xs flex items-center gap-1.5 active:scale-95 transition-all">
-          <i data-lucide="scan-barcode" class="w-5 h-5"></i>
-          <span>Escanear</span>
-        </button>
-      </div>
-
-      <!-- Dropdown Quick Search Results -->
-      <div id="posSearchResults" class="hidden max-h-52 overflow-y-auto bg-slate-800 border border-indigo-500/40 rounded-2xl divide-y divide-slate-700/60 shadow-2xl"></div>
-
-      <!-- Active Seller POS Banner -->
-      <div class="flex items-center justify-between p-2.5 bg-indigo-950/40 border border-indigo-500/30 rounded-2xl text-xs">
-        <div class="flex items-center gap-2">
-          <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
-          <span class="text-slate-300">Vendedor:</span>
-          <span id="posVendedorNombre" class="font-bold text-white font-mono bg-indigo-900/60 px-2 py-0.5 rounded-lg border border-indigo-500/40">Carlos</span>
-        </div>
-        <button onclick="abrirModalSeleccionVendedor()" class="text-[11px] text-indigo-400 hover:text-indigo-300 font-bold hover:underline">Cambiar 👤</button>
-      </div>
-
-      <!-- Sale Cart Card -->
-      <div class="bg-slate-800/90 border border-slate-700/80 rounded-2xl p-3.5 space-y-3">
-        <!-- Modo POS Toggle: Venta Inmediata vs Pedido / Encargo -->
-        <div class="grid grid-cols-2 gap-1 bg-slate-950/80 p-1 rounded-xl border border-slate-700/60 text-xs font-bold font-mono">
-          <button type="button" id="btnModoVenta" onclick="cambiarModoPOS('venta')" class="py-2 rounded-lg bg-emerald-600 text-white shadow-md flex items-center justify-center gap-1.5 active:scale-95 transition-all">
-            <i data-lucide="shopping-bag" class="w-3.5 h-3.5"></i>
-            <span>Venta Directa</span>
-          </button>
-          <button type="button" id="btnModoPedido" onclick="cambiarModoPOS('pedido')" class="py-2 rounded-lg bg-transparent text-slate-400 hover:text-white flex items-center justify-center gap-1.5 active:scale-95 transition-all">
-            <i data-lucide="clipboard-list" class="w-3.5 h-3.5"></i>
-            <span>Encargo / Pedido</span>
-          </button>
-        </div>
-
-        <div class="flex items-center justify-between border-b border-slate-700/70 pb-2">
+    <!-- VIEW 2: PEDIDOS -->
+    <section id="viewPedidos" class="space-y-4 hidden">
+      <div class="bg-gradient-to-br from-slate-900 via-slate-850 to-slate-900 border border-amber-500/40 rounded-3xl p-4 shadow-xl space-y-3.5">
+        <div class="flex items-center justify-between border-b border-slate-800 pb-2.5">
           <div class="flex items-center gap-2">
-            <i data-lucide="shopping-bag" id="cartHeaderIcon" class="w-4 h-4 text-emerald-400"></i>
-            <h3 class="text-xs font-bold uppercase tracking-wider text-slate-200" id="cartHeaderTitle">Carrito de Venta (<span id="cartCount">0</span>)</h3>
-          </div>
-          <button onclick="vaciarCarrito()" class="text-xs text-rose-400 hover:text-rose-300 font-semibold">Vaciar</button>
-        </div>
-
-        <!-- Cart Items Container -->
-        <div id="cartItemsList" class="space-y-2 min-h-[90px] max-h-[220px] overflow-y-auto">
-          <!-- Rendered by JS -->
-        </div>
-
-        <!-- Cart Totals & Payments Container (Solo visible en modo Venta Directa) -->
-        <div id="posTotalesYPagosContainer" class="pt-3 border-t border-slate-700 space-y-2">
-          <!-- Cart Totals (Dual Currency) -->
-          <div class="flex items-baseline justify-between">
-            <span class="text-xs font-bold text-slate-300">TOTAL A COBRAR:</span>
-            <div class="text-right">
-              <div class="text-2xl font-black text-white font-mono" id="cartTotalCRC">₡0</div>
-              <div class="text-xs font-bold text-slate-400 font-mono" id="cartTotalUSD">$0.00 USD</div>
-            </div>
-          </div>
-
-          <!-- Payment Methods -->
-          <div class="grid grid-cols-2 sm:grid-cols-4 gap-1.5 pt-1 text-xs">
-            <button type="button" onclick="setPaymentMethod('Efectivo')" class="pay-btn active p-2 rounded-xl bg-indigo-600 text-white font-bold text-center border border-transparent">
-              💵 Efectivo
-            </button>
-            <button type="button" onclick="setPaymentMethod('SINPE / Transf.')" class="pay-btn p-2 rounded-xl bg-slate-900 text-slate-300 font-medium text-center border border-slate-700">
-              📱 SINPE
-            </button>
-            <button type="button" onclick="setPaymentMethod('Tarjeta')" class="pay-btn p-2 rounded-xl bg-slate-900 text-slate-300 font-medium text-center border border-slate-700">
-              💳 Tarjeta
-            </button>
-            <button type="button" onclick="setPaymentMethod('Pago Luego')" class="pay-btn p-2 rounded-xl bg-slate-900 text-amber-300 font-bold text-center border border-amber-500/40">
-              🕒 Pago Luego
-            </button>
-          </div>
-
-          <!-- Banner Informativo Pago Luego -->
-          <div id="pagoLuegoHelper" class="hidden p-2.5 rounded-xl bg-amber-950/40 border border-amber-500/40 text-xs text-amber-200 flex items-start gap-2">
-            <i data-lucide="alert-circle" class="w-4 h-4 text-amber-400 shrink-0 mt-0.5"></i>
-            <div>
-              <span class="font-bold block">Venta a Crédito / Pago Posterior:</span>
-              <span class="text-[11px] text-slate-300">Se registrará en el módulo de <b>Cuentas por Cobrar</b>. Es obligatorio asignar un cliente.</span>
-            </div>
-          </div>
-
-          <!-- Costo de Envío de la Venta (Resta del ingreso neto en empresa pero no altera factura ni comprobante del cliente) -->
-          <div class="bg-slate-900/80 border border-slate-700/80 rounded-xl p-2.5 space-y-1">
-            <div class="flex items-center justify-between">
-              <label for="posEnvioCRC" class="text-xs font-semibold text-slate-300 flex items-center gap-1.5">
-                <i data-lucide="truck" class="w-3.5 h-3.5 text-amber-400"></i>
-                <span>Costo de Envío / Entrega (₡)</span>
-              </label>
-              <span class="text-[9.5px] text-slate-400 font-mono">Gasto de envío</span>
-            </div>
-            <input type="number" id="posEnvioCRC" min="0" step="100" value="0" placeholder="₡0"
-              class="w-full px-2.5 py-1.5 bg-slate-950 border border-slate-700 rounded-lg text-white font-mono font-bold text-xs focus:border-amber-400">
-            <p class="text-[9.5px] text-slate-400 leading-tight">
-              🛵 Resta del ingreso neto que entra a la empresa. La factura del cliente se mantiene intacta.
-            </p>
-          </div>
-
-          <!-- Cash Change Calculator -->
-          <div id="cashHelper" class="pt-1 grid grid-cols-2 gap-2 text-xs">
-            <div>
-              <label class="text-slate-400 block mb-0.5">Paga con (₡ Colones):</label>
-              <input type="number" id="cashReceived" oninput="calcularCambio()" placeholder="0" class="w-full px-2.5 py-1.5 bg-slate-900 border border-slate-700 rounded-lg text-white font-mono font-bold">
+            <div class="p-2 rounded-xl bg-amber-500/20 text-amber-400">
+              <i data-lucide="shopping-bag" class="w-4 h-4"></i>
             </div>
             <div>
-              <label class="text-slate-400 block mb-0.5">Cambio / Vuelto:</label>
-              <div id="cashChange" class="w-full px-2.5 py-1.5 bg-slate-900/60 border border-slate-700/60 rounded-lg text-emerald-400 font-mono font-black">₡0</div>
+              <h2 class="text-xs font-bold text-white uppercase tracking-wider">Nuevo Pedido / Encargo</h2>
+              <p class="text-[10px] text-slate-400">Para abastecer con la distribuidora</p>
             </div>
           </div>
+          <button type="button" onclick="vaciarCarritoPedido()" class="text-[11px] text-rose-400 hover:text-rose-300 font-semibold">Vaciar</button>
         </div>
 
-        <!-- Banner de Encargo de Cantidades (Solo visible en modo Pedido) -->
-        <div id="posBannerModoPedido" class="hidden pt-2 border-t border-amber-500/30">
-          <div class="bg-amber-950/40 border border-amber-500/30 rounded-xl p-2.5 flex items-center justify-between">
-            <div class="flex items-center gap-2 text-amber-300 text-xs font-bold">
-              <i data-lucide="clipboard-list" class="w-4 h-4 text-amber-400"></i>
-              <span>Total Botellas a Encargar:</span>
-            </div>
-            <span id="pedidoTotalUnidades" class="text-base font-black font-mono text-amber-400">0 unids</span>
-          </div>
-        </div>
-
-        <!-- Cliente: Búsqueda con autocompletar -->
-        <div class="relative" onclick="document.addEventListener('click', cerrarDropdownCliente, {once:true})">
-          <div class="flex items-center gap-2">
-            <div class="relative flex-1">
-              <i data-lucide="user" class="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"></i>
-              <input type="text" id="posClienteInput" oninput="onClienteInputChange()" placeholder="Buscar cliente o escribir nombre..." autocomplete="off"
-                class="w-full pl-9 pr-3 py-2 bg-slate-900 border border-slate-700 rounded-xl text-xs text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500">
-            </div>
-            <button onclick="abrirModalNuevoCliente()" title="Nuevo cliente" class="p-2 bg-slate-900 border border-slate-700 rounded-xl text-indigo-400 hover:text-white hover:border-indigo-500 active:scale-95 transition-all">
-              <i data-lucide="user-plus" class="w-4 h-4"></i>
-            </button>
-          </div>
-          <!-- Dropdown de resultados de búsqueda -->
-          <div id="clienteDropdown" class="hidden absolute bottom-full mb-1 left-0 right-0 z-50 bg-slate-800 border border-indigo-500/40 rounded-2xl shadow-2xl overflow-hidden divide-y divide-slate-700/50 max-h-52 overflow-y-auto"></div>
-        </div>
-
-          <!-- Panel de Puntos del Cliente Seleccionado -->
-          <div id="panelPuntosCliente" class="hidden"></div>
-
-          <!-- Checkout Action Button -->
-          <button onclick="completarVenta()" id="btnCheckout" class="w-full py-3.5 bg-gradient-to-r from-emerald-500 to-teal-600 text-white text-sm font-extrabold rounded-xl shadow-lg shadow-emerald-500/25 active:scale-95 transition-all flex items-center justify-center gap-2">
-            <i data-lucide="check" class="w-5 h-5"></i>
-            <span>COMPLETAR VENTA</span>
-          </button>
-        </div>
-      </div>
-
-      <!-- Extra spacer for mobile bottom navigation -->
-      <div style="height: 120px; width: 100%;" class="w-full block"></div>
-    </section>
-
-    <!-- ============================================================== -->
-    <!-- VIEW 7: MAESTRO DE CLIENTES                                     -->
-    <!-- ============================================================== -->
-    <section id="viewClientes" class="space-y-3 hidden">
-
-      <!-- Banner Portal de Puntos de Clientes (Taberna) -->
-      <div class="bg-gradient-to-r from-amber-950/80 via-stone-900 to-amber-950/60 border border-amber-500/40 rounded-2xl p-3.5 shadow-lg flex items-center justify-between gap-3">
-        <div class="flex items-center gap-2.5 min-w-0">
-          <div class="w-10 h-10 rounded-xl bg-amber-500/20 border border-amber-500/30 flex items-center justify-center text-xl shrink-0">
-            <span>🍻</span>
-          </div>
-          <div class="min-w-0">
-            <h3 class="text-xs font-black text-amber-300 uppercase tracking-wider font-sans">Club de la Taberna (Portal Clientes)</h3>
-            <p class="text-[10px] text-stone-400 truncate">Permite a tus clientes consultar sus puntos con su celular</p>
-          </div>
-        </div>
-        <div class="flex items-center gap-1.5 shrink-0">
-          <button type="button" onclick="copiarEnlacePortalClientes()" class="px-2.5 py-1.5 bg-amber-500/20 hover:bg-amber-500/30 border border-amber-500/40 text-amber-300 rounded-xl text-xs font-bold flex items-center gap-1 active:scale-95 transition-all" title="Copiar link para enviar por WhatsApp">
-            <i data-lucide="share-2" class="w-3.5 h-3.5"></i>
-            <span>Compartir</span>
-          </button>
-          <button type="button" onclick="abrirPortalClientes()" class="px-2.5 py-1.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-xs font-bold flex items-center gap-1 active:scale-95 transition-all" title="Abrir portal de taberna">
-            <i data-lucide="external-link" class="w-3.5 h-3.5"></i>
-            <span>Ver</span>
-          </button>
-        </div>
-      </div>
-
-      <!-- Header con buscador -->
-      <div class="flex items-center gap-2">
-        <div class="relative flex-1">
-          <i data-lucide="search" class="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"></i>
-          <input type="text" id="searchClientes" oninput="state.filtroClientes=this.value; renderizarClientes()" placeholder="Buscar por nombre o teléfono..."
-            class="w-full pl-10 pr-4 py-2.5 bg-slate-800 border border-slate-700 rounded-2xl text-sm text-white placeholder-slate-400 focus:outline-none focus:border-indigo-500">
-        </div>
-        <button onclick="abrirModalNuevoCliente()" class="px-3 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-2xl font-bold text-xs flex items-center gap-1.5 active:scale-95 transition-all shadow-md shadow-indigo-600/30">
-          <i data-lucide="user-plus" class="w-4 h-4"></i>
-          <span>Nuevo</span>
-        </button>
-      </div>
-
-      <!-- Estadística -->
-      <div class="flex items-center justify-between px-1">
-        <span class="text-xs text-slate-400">Total clientes: <span id="contadorClientes" class="font-bold text-white">0</span></span>
-        <span class="text-[11px] text-slate-500">Ordenados por puntos</span>
-      </div>
-
-      <!-- Lista de Clientes -->
-      <div id="listaClientesMaestro" class="space-y-2">
-        <!-- Renderizado por JS -->
-      </div>
-
-      <div style="height:80px"></div>
-    </section>
-
-    <!-- ============================================================== -->
-    <!-- VIEW 8: CUENTAS PENDIENTES (POR COBRAR Y POR PAGAR)           -->
-    <!-- ============================================================== -->
-    <section id="viewCuentas" class="space-y-3.5 hidden">
-
-      <!-- Header & Buscador -->
-      <div class="relative">
-        <i data-lucide="search" class="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400"></i>
-        <input type="text" id="searchCuentas" oninput="state.filtroCuentas=this.value; renderizarCuentas()" placeholder="Buscar cliente, proveedor o factura..."
-          class="w-full pl-10 pr-4 py-2.5 bg-slate-800 border border-slate-700 rounded-2xl text-sm text-white placeholder-slate-400 focus:outline-none focus:border-indigo-500">
-      </div>
-
-      <!-- Resumen General de Cuentas (Por Cobrar vs Por Pagar) -->
-      <div class="grid grid-cols-2 gap-2.5">
-        <!-- Card Por Cobrar (Clientes) -->
-        <div class="bg-gradient-to-br from-emerald-950/60 via-slate-900 to-slate-900 border border-emerald-500/40 rounded-2xl p-3 shadow-lg space-y-1.5">
+        <div class="space-y-1.5">
           <div class="flex items-center justify-between">
-            <div class="flex items-center gap-1.5">
-              <div class="w-6 h-6 rounded-lg bg-emerald-600/20 text-emerald-400 flex items-center justify-center">
-                <i data-lucide="arrow-down-left" class="w-3.5 h-3.5"></i>
-              </div>
-              <span class="text-xs font-bold text-emerald-300">Por Cobrar</span>
-            </div>
-            <span id="badgeCuentasCobrar" class="text-[10px] font-mono font-bold px-1.5 py-0.2 rounded bg-emerald-950 text-emerald-300 border border-emerald-500/30">0</span>
+            <label class="block text-xs font-semibold text-slate-300">Cliente del Pedido *</label>
+            <button type="button" onclick="cambiarVista('clientes'); abrirModalNuevoCliente();" class="text-[11px] font-bold text-amber-400 hover:text-amber-300 flex items-center gap-1 bg-amber-500/15 hover:bg-amber-500/25 border border-amber-500/40 px-2.5 py-1 rounded-xl active:scale-95 transition-all shadow-sm">
+              <i data-lucide="user-plus" class="w-3.5 h-3.5"></i>
+              <span>+ Nuevo Cliente</span>
+            </button>
           </div>
-          <div class="font-mono">
-            <div class="text-sm font-black text-white" id="cuentasTotalCobrarCRC">₡0</div>
-            <div class="text-[10px] text-emerald-400" id="cuentasTotalCobrarUSD">$0.00 USD</div>
-          </div>
-        </div>
-
-        <!-- Card Por Pagar (Proveedores) -->
-        <div class="bg-gradient-to-br from-rose-950/60 via-slate-900 to-slate-900 border border-rose-500/40 rounded-2xl p-3 shadow-lg space-y-1.5">
-          <div class="flex items-center justify-between">
-            <div class="flex items-center gap-1.5">
-              <div class="w-6 h-6 rounded-lg bg-rose-600/20 text-rose-400 flex items-center justify-center">
-                <i data-lucide="arrow-up-right" class="w-3.5 h-3.5"></i>
-              </div>
-              <span class="text-xs font-bold text-rose-300">Por Pagar</span>
-            </div>
-            <span id="badgeCuentasPagar" class="text-[10px] font-mono font-bold px-1.5 py-0.2 rounded bg-rose-950 text-rose-300 border border-rose-500/30">0</span>
-          </div>
-          <div class="font-mono">
-            <div class="text-sm font-black text-white" id="cuentasTotalPagarCRC">₡0</div>
-            <div class="text-[10px] text-rose-400" id="cuentasTotalPagarUSD">$0.00 USD</div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Filtros de Pestañas (Por Cobrar / Liquidadas / Por Pagar / Todos) -->
-      <div class="grid grid-cols-4 gap-1 bg-slate-950/80 p-1 rounded-xl border border-slate-700/60 text-[11px] font-bold font-mono">
-        <button type="button" id="tabCuentas-cobrar" onclick="filtrarTipoCuenta('Por Cobrar')" class="py-2 rounded-lg bg-emerald-600 text-white shadow-md text-center transition-all">
-          Por Cobrar
-        </button>
-        <button type="button" id="tabCuentas-liquidadas" onclick="filtrarTipoCuenta('Liquidadas')" class="py-2 rounded-lg bg-transparent text-slate-400 hover:text-white text-center transition-all">
-          Liquidadas
-        </button>
-        <button type="button" id="tabCuentas-pagar" onclick="filtrarTipoCuenta('Por Pagar')" class="py-2 rounded-lg bg-transparent text-slate-400 hover:text-white text-center transition-all">
-          Por Pagar
-        </button>
-        <button type="button" id="tabCuentas-todos" onclick="filtrarTipoCuenta('todos')" class="py-2 rounded-lg bg-transparent text-slate-400 hover:text-white text-center transition-all">
-          Todos (<span id="cuentasCountTotal">0</span>)
-        </button>
-      </div>
-
-      <!-- Lista de Cuentas -->
-      <div id="listaCuentasPendientes" class="space-y-2.5 min-h-[120px]">
-        <!-- Renderizado por JS -->
-      </div>
-
-      <div style="height:100px"></div>
-    </section>
-
-    <!-- ============================================================== -->
-    <!-- VIEW 5: FINANZAS Y MANEJO DE CUENTAS (EMPRESA, CARLOS, DANIEL) -->
-    <!-- ============================================================== -->
-    <section id="viewFinanzas" class="space-y-3.5 hidden">
-      
-      <!-- Top Financial Summary Cards -->
-      <div class="space-y-2.5">
-        
-        <!-- Card 1: Caja Empresa (Fondo Disponible) -->
-        <div class="bg-gradient-to-br from-emerald-950/70 via-slate-900 to-slate-900 border border-emerald-500/40 rounded-3xl p-4 shadow-xl relative overflow-hidden">
-          <div class="absolute -right-6 -bottom-6 w-28 h-28 bg-emerald-500/10 rounded-full blur-xl pointer-events-none"></div>
-          <div class="flex items-center justify-between mb-1.5 relative z-10">
-            <div class="flex items-center gap-2">
-              <div class="w-8 h-8 rounded-xl bg-emerald-600/20 border border-emerald-500/40 flex items-center justify-center text-emerald-400">
-                <i data-lucide="building-2" class="w-4 h-4"></i>
-              </div>
-              <div>
-                <h3 class="text-xs font-black uppercase tracking-wider text-white">Caja Empresa (DC El Destape)</h3>
-                <span class="text-[10px] text-emerald-300/80 font-medium">Dinero real disponible</span>
-              </div>
-            </div>
-            <span class="px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 text-[10px] font-mono font-bold">Disponible</span>
-          </div>
-
-          <div class="grid grid-cols-2 gap-2 pt-2 border-t border-slate-800/80 relative z-10 font-mono">
-            <div>
-              <div class="text-[10px] text-slate-400 uppercase font-sans font-bold">Saldo en Colones (Caja Real)</div>
-              <div class="text-lg font-black text-emerald-400" id="finSaldoEmpresaCRC">₡0</div>
-            </div>
-            <div class="text-right">
-              <div class="text-[10px] text-slate-400 uppercase font-sans font-bold">Saldo en Dólares</div>
-              <div class="text-base font-black text-white" id="finSaldoEmpresaUSD">$0.00 USD</div>
-            </div>
-          </div>
-
-          <!-- Rubro Extra: Cuentas por Cobrar Pendientes (Dinero que falta por ingresar) -->
-          <div class="mt-2.5 pt-2 border-t border-slate-800/80 bg-slate-950/60 rounded-2xl p-2.5 border border-amber-500/30 relative z-10 font-mono text-xs">
-            <div class="flex items-center justify-between">
-              <div class="flex items-center gap-1.5 font-sans">
-                <i data-lucide="clock" class="w-3.5 h-3.5 text-amber-400"></i>
-                <span class="text-[11px] font-bold text-amber-300">Por Cobrar Pendiente (CXC):</span>
-              </div>
-              <span id="finCxcBadge" class="hidden text-[9px] font-bold px-1.5 py-0.2 rounded bg-amber-950/80 border border-amber-500/40 text-amber-300 font-sans animate-pulse">Pendiente de Ingreso</span>
-            </div>
-            <div class="flex items-baseline justify-between mt-1">
-              <div class="text-sm font-black text-amber-400" id="finCxcPendienteCRC">₡0</div>
-              <div class="text-[10px] text-slate-400" id="finCxcPendienteUSD">($0.00 USD)</div>
-            </div>
-            <p class="text-[9.5px] text-slate-400 font-sans mt-1 leading-tight">
-              ⏳ Este dinero <b>no suma</b> al saldo en caja hasta que el cliente abone, liquide o se elimine la cuenta.
-            </p>
-          </div>
-        </div>
-
-        <!-- Socios Grid: Cuenta Carlos & Cuenta Daniel -->
-        <div class="grid grid-cols-2 gap-2.5">
-          
-          <!-- Card 2: Cuenta Carlos -->
-          <div class="bg-gradient-to-br from-slate-900 to-slate-950 border border-blue-500/30 rounded-2xl p-3 shadow-lg space-y-2 relative overflow-hidden">
-            <div class="flex items-center justify-between">
-              <div class="flex items-center gap-1.5">
-                <span class="w-6 h-6 rounded-lg bg-blue-600/20 border border-blue-500/40 flex items-center justify-center text-blue-400 font-black text-xs">C</span>
-                <span class="text-xs font-black text-white">Carlos</span>
-              </div>
-              <span class="text-[9px] font-bold text-blue-300 bg-blue-950/60 px-1.5 py-0.2 rounded border border-blue-500/30">Socio</span>
-            </div>
-
-            <div class="font-mono">
-              <div class="text-[10px] text-slate-400">Deuda que se le debe:</div>
-              <div class="text-sm font-black text-blue-400" id="finDeudaCarlosCRC">₡0</div>
-              <div class="text-[10px] text-slate-500" id="finDeudaCarlosUSD">($0.00 USD)</div>
-            </div>
-
-            <div class="grid grid-cols-2 gap-1 pt-1">
-              <button onclick="abrirModalMovimientoDinero('aporte_capital', 'Carlos')" class="py-1 px-1.5 bg-blue-600/20 hover:bg-blue-600/30 border border-blue-500/30 rounded-lg text-[10px] font-bold text-blue-300 active:scale-95 text-center transition-all">
-                + Aporte
-              </button>
-              <button onclick="abrirModalMovimientoDinero('pago_socio', 'Carlos')" class="py-1 px-1.5 bg-emerald-600/20 hover:bg-emerald-600/30 border border-emerald-500/30 rounded-lg text-[10px] font-bold text-emerald-300 active:scale-95 text-center transition-all">
-                💵 Pagar
-              </button>
-            </div>
-          </div>
-
-          <!-- Card 3: Cuenta Daniel -->
-          <div class="bg-gradient-to-br from-slate-900 to-slate-950 border border-violet-500/30 rounded-2xl p-3 shadow-lg space-y-2 relative overflow-hidden">
-            <div class="flex items-center justify-between">
-              <div class="flex items-center gap-1.5">
-                <span class="w-6 h-6 rounded-lg bg-violet-600/20 border border-violet-500/40 flex items-center justify-center text-violet-400 font-black text-xs">D</span>
-                <span class="text-xs font-black text-white">Daniel</span>
-              </div>
-              <span class="text-[9px] font-bold text-violet-300 bg-violet-950/60 px-1.5 py-0.2 rounded border border-violet-500/30">Socio</span>
-            </div>
-
-            <div class="font-mono">
-              <div class="text-[10px] text-slate-400">Deuda que se le debe:</div>
-              <div class="text-sm font-black text-violet-400" id="finDeudaDanielCRC">₡0</div>
-              <div class="text-[10px] text-slate-500" id="finDeudaDanielUSD">($0.00 USD)</div>
-            </div>
-
-            <div class="grid grid-cols-2 gap-1 pt-1">
-              <button onclick="abrirModalMovimientoDinero('aporte_capital', 'Daniel')" class="py-1 px-1.5 bg-violet-600/20 hover:bg-violet-600/30 border border-violet-500/30 rounded-lg text-[10px] font-bold text-violet-300 active:scale-95 text-center transition-all">
-                + Aporte
-              </button>
-              <button onclick="abrirModalMovimientoDinero('pago_socio', 'Daniel')" class="py-1 px-1.5 bg-emerald-600/20 hover:bg-emerald-600/30 border border-emerald-500/30 rounded-lg text-[10px] font-bold text-emerald-300 active:scale-95 text-center transition-all">
-                💵 Pagar
-              </button>
-            </div>
-          </div>
-
-        </div>
-      </div>
-
-      <!-- Quick Action Buttons -->
-      <div class="grid grid-cols-3 gap-2 text-xs font-bold">
-        <button onclick="abrirModalMovimientoDinero('aporte_capital')" class="py-2.5 px-2 bg-slate-800/90 hover:bg-slate-800 border border-blue-500/30 text-blue-300 rounded-2xl flex flex-col items-center justify-center gap-1 active:scale-95 shadow-md transition-all">
-          <i data-lucide="plus-circle" class="w-4 h-4 text-blue-400"></i>
-          <span class="text-[11px]">Inyectar Aporte</span>
-        </button>
-        <button onclick="abrirModalMovimientoDinero('pago_socio')" class="py-2.5 px-2 bg-slate-800/90 hover:bg-slate-800 border border-emerald-500/30 text-emerald-300 rounded-2xl flex flex-col items-center justify-center gap-1 active:scale-95 shadow-md transition-all">
-          <i data-lucide="arrow-up-right" class="w-4 h-4 text-emerald-400"></i>
-          <span class="text-[11px]">Pagar a Socio</span>
-        </button>
-        <button onclick="abrirModalMovimientoDinero('gasto_operativo')" class="py-2.5 px-2 bg-slate-800/90 hover:bg-slate-800 border border-rose-500/30 text-rose-300 rounded-2xl flex flex-col items-center justify-center gap-1 active:scale-95 shadow-md transition-all">
-          <i data-lucide="receipt" class="w-4 h-4 text-rose-400"></i>
-          <span class="text-[11px]">Gasto Empresa</span>
-        </button>
-      </div>
-
-      <!-- Financial Ledger (Historial de Movimientos de Dinero) -->
-      <div class="bg-slate-800/80 border border-slate-700/80 rounded-2xl p-3.5 space-y-3">
-        <div class="flex items-center justify-between border-b border-slate-700 pb-2.5">
-          <h3 class="text-xs font-bold text-white uppercase tracking-wider flex items-center gap-1.5">
-            <i data-lucide="history" class="w-4 h-4 text-indigo-400"></i>
-            <span>Historial de Dinero (<span id="finMovimientosCount">0</span>)</span>
-          </h3>
-        </div>
-
-        <!-- Filter pills -->
-        <div class="grid grid-cols-4 gap-1 text-[10px] font-bold font-mono">
-          <button id="finFilter-todos" onclick="filtrarHistorialFinanzas('todos')" class="py-1 rounded-lg bg-indigo-600 text-white text-center">Todos</button>
-          <button id="finFilter-empresa" onclick="filtrarHistorialFinanzas('Empresa')" class="py-1 rounded-lg bg-slate-900 text-slate-400 hover:text-white text-center">Empresa</button>
-          <button id="finFilter-carlos" onclick="filtrarHistorialFinanzas('Carlos')" class="py-1 rounded-lg bg-slate-900 text-slate-400 hover:text-white text-center">Carlos</button>
-          <button id="finFilter-daniel" onclick="filtrarHistorialFinanzas('Daniel')" class="py-1 rounded-lg bg-slate-900 text-slate-400 hover:text-white text-center">Daniel</button>
-        </div>
-
-        <div id="finMovimientosList" class="space-y-2 text-xs max-h-[380px] overflow-y-auto">
-          <!-- Rendered by JS -->
-        </div>
-      </div>
-
-      <!-- Extra spacer for mobile bottom navigation -->
-      <div style="height: 120px; width: 100%;" class="w-full block"></div>
-    </section>
-
-    <!-- ============================================================== -->
-    <!-- VIEW 6: IMPORTAR / EXPORTAR EXCEL Y CONFIGURACIÓN              -->
-    <!-- ============================================================== -->
-    <section id="viewConfiguracion" class="space-y-4 hidden">
-      
-      <!-- Excel Import / Export Hub -->
-      <div class="bg-gradient-to-br from-emerald-950/40 to-slate-900 border border-emerald-500/30 rounded-2xl p-4 space-y-3">
-        <div class="flex items-center gap-2 text-emerald-400">
-          <i data-lucide="file-spreadsheet" class="w-5 h-5"></i>
-          <h2 class="text-sm font-bold text-white">Centro de Importación y Exportación Excel</h2>
-        </div>
-        <p class="text-xs text-slate-400 leading-relaxed">
-          Descarga o sube tu archivo Excel (.xlsx) con hojas <b>Productos</b>, <b>Compras</b> y <b>Ventas</b>.
-        </p>
-
-        <div class="grid grid-cols-2 gap-2 pt-1">
-          <button onclick="exportarLibroExcel()" class="py-2.5 px-3 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold rounded-xl active:scale-95 transition-all flex items-center justify-center gap-1.5">
-            <i data-lucide="download" class="w-4 h-4"></i>
-            Descargar Excel
-          </button>
-          <label class="py-2.5 px-3 bg-slate-800 hover:bg-slate-750 border border-slate-700 text-slate-200 text-xs font-bold rounded-xl active:scale-95 transition-all flex items-center justify-center gap-1.5 cursor-pointer text-center">
-            <i data-lucide="upload" class="w-4 h-4 text-emerald-400"></i>
-            <span>Subir Excel</span>
-            <input type="file" accept=".xlsx,.xls,.csv" onchange="importarArchivoExcel(event)" class="hidden">
-          </label>
-        </div>
-      </div>
-
-      <!-- Business Branding Card -->
-      <div class="bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 border border-amber-500/40 rounded-3xl p-4 shadow-xl flex items-center gap-3.5">
-        <div class="w-14 h-14 rounded-full border-2 border-amber-400/80 p-0.5 bg-black shadow-lg shadow-amber-500/20 shrink-0 overflow-hidden">
-          <img src="logo.png" alt="DC El Destape Licores" class="w-full h-full object-cover rounded-full">
-        </div>
-        <div class="min-w-0 flex-1">
-          <div class="flex items-center gap-1.5">
-            <h3 class="font-black text-sm text-white uppercase tracking-wider">DC EL DESTAPE</h3>
-            <span class="text-[9px] font-bold text-amber-300 bg-amber-950/80 px-1.5 py-0.2 rounded border border-amber-500/40">VIP</span>
-          </div>
-          <p class="text-xs text-slate-400">Licores & Bebidas Exclusivas</p>
-          <div class="text-[10px] text-amber-400/90 font-mono font-bold mt-0.5">WhatsApp: +506 8992-7936</div>
-        </div>
-      </div>
-
-      <!-- Google Sheets Connection Settings -->
-      <div class="bg-slate-800/90 border border-slate-700/80 rounded-2xl p-4 space-y-3">
-        <div class="flex items-center justify-between">
-          <div class="flex items-center gap-2.5 text-indigo-400">
-            <i data-lucide="database" class="w-5 h-5"></i>
-            <h2 class="text-sm font-bold text-white">Conexión con Google Sheets</h2>
-          </div>
-          <span id="sheetsConnectionBadge"></span>
-        </div>
-        <p class="text-xs text-slate-400 leading-relaxed">
-          Pega la URL de tu Web App de Google Apps Script para sincronizar en tiempo real.
-        </p>
-
-        <div>
-          <input type="url" id="sheetsApiUrl" placeholder="https://script.google.com/macros/s/.../exec" class="w-full px-3 py-2.5 bg-slate-900 border border-slate-700 rounded-xl text-xs text-white font-mono placeholder-slate-500 focus:outline-none focus:border-indigo-500">
-        </div>
-
-        <div class="flex gap-2 pt-1">
-          <button onclick="guardarConfiguracionSheets()" class="flex-1 py-2 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold rounded-xl active:scale-95 transition-all">
-            Guardar y Conectar
-          </button>
-          <button onclick="probarConexionSheets()" class="px-3 py-2 bg-slate-700 hover:bg-slate-600 text-slate-200 text-xs font-semibold rounded-xl active:scale-95 transition-all flex items-center gap-1">
-            <i data-lucide="activity" class="w-4 h-4"></i>
-            Probar
-          </button>
-        </div>
-        <!-- Botón de diagnóstico de encargos -->
-        <button onclick="diagnosticarPedidos()" class="w-full py-2 bg-amber-900/40 hover:bg-amber-900/60 border border-amber-600/40 text-amber-300 text-xs font-bold rounded-xl active:scale-95 transition-all flex items-center justify-center gap-2 mt-1">
-          <i data-lucide="clipboard-list" class="w-4 h-4"></i>
-          Cargar Encargos desde Sheets
-        </button>
-      </div>
-
-      <!-- Preferences & Exchange Rate -->
-      <div class="bg-slate-800/90 border border-slate-700/80 rounded-2xl p-4 space-y-3 text-xs">
-        <h3 class="font-bold uppercase tracking-wider text-slate-300">Ajustes Generales y Tipo de Cambio</h3>
-        
-        <div class="space-y-3">
-          <div>
-            <label class="block font-semibold text-slate-300 mb-1">Nombre del Negocio:</label>
-            <input type="text" id="businessNameInput" value="Libro de Inventario" class="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-xl text-white">
-          </div>
-
-          <div class="grid grid-cols-2 gap-3">
-            <div>
-              <label class="block font-semibold text-slate-300 mb-1">Tipo de Cambio (₡ / USD):</label>
-              <input type="number" id="exchangeRateInput" value="520" class="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-xl text-white font-mono font-bold">
-            </div>
-            <div>
-              <label class="block font-semibold text-slate-300 mb-1">Teléfono / WhatsApp:</label>
-              <input type="tel" id="businessPhoneInput" placeholder="+506..." class="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-xl text-white">
-            </div>
-          </div>
-
-          <button onclick="guardarPreferenciasNegocio()" class="w-full py-2.5 bg-slate-700 hover:bg-slate-600 text-white font-bold rounded-xl active:scale-95 transition-all">
-            Guardar Ajustes
-          </button>
-        </div>
-      </div>
-
-      <!-- Loyalty Points Config -->
-      <div class="bg-gradient-to-br from-amber-950/30 to-slate-900 border border-amber-500/30 rounded-2xl p-4 space-y-3 text-xs">
-        <div class="flex items-center gap-2">
-          <i data-lucide="star" class="w-4 h-4 text-amber-400"></i>
-          <h3 class="font-bold uppercase tracking-wider text-amber-300">Programa de Puntos de Fidelización</h3>
-        </div>
-        <p class="text-slate-400 text-[11px] leading-relaxed">
-          Configura cómo se ganan y canalizan los puntos de recompensa de tus clientes.
-        </p>
-
-        <div class="space-y-3">
-          <!-- puntosRazonCRC -->
-          <div>
-            <label class="block font-semibold text-slate-300 mb-1">
-              ¿Cuánto debe gastar (₡) para ganar 1 punto?
-            </label>
-            <div class="flex items-center gap-2">
-              <span class="text-slate-400 font-mono shrink-0">Cada</span>
-              <input type="number" id="puntosRazonCRCInput" min="1" step="5" placeholder="20"
-                class="flex-1 px-3 py-2 bg-slate-900 border border-amber-500/40 rounded-xl text-white font-mono font-bold focus:outline-none focus:border-amber-400">
-              <span class="text-slate-400 font-mono shrink-0">₡ = 1 punto</span>
-            </div>
-            <p class="text-[10px] text-slate-500 mt-1">Ej: 20 significa que cada ₡20 gastados = 1 punto</p>
-          </div>
-
-          <!-- puntosValorCRC -->
-          <div>
-            <label class="block font-semibold text-slate-300 mb-1">
-              ¿Cuánto vale (₡) cada punto al canjear?
-            </label>
-            <div class="flex items-center gap-2">
-              <span class="text-slate-400 font-mono shrink-0">1 punto =</span>
-              <input type="number" id="puntosValorCRCInput" min="1" step="1" placeholder="1"
-                class="flex-1 px-3 py-2 bg-slate-900 border border-amber-500/40 rounded-xl text-white font-mono font-bold focus:outline-none focus:border-amber-400">
-              <span class="text-slate-400 font-mono shrink-0">₡ descuento</span>
-            </div>
-            <p class="text-[10px] text-slate-500 mt-1">Ej: 1 significa que 1 punto = ₡1 de descuento al pagar</p>
-          </div>
-
-          <!-- puntosMinimosCanje -->
-          <div>
-            <label class="block font-semibold text-slate-300 mb-1">
-              Mínimo de puntos para poder canjear:
-            </label>
-            <div class="flex items-center gap-2">
-              <input type="number" id="puntosMinimosCajeInput" min="1" step="100" placeholder="4000"
-                class="flex-1 px-3 py-2 bg-slate-900 border border-amber-500/40 rounded-xl text-white font-mono font-bold focus:outline-none focus:border-amber-400">
-              <span class="text-slate-400 font-mono shrink-0">puntos</span>
-            </div>
-            <p class="text-[10px] text-slate-500 mt-1">Ej: 4000 = el cliente necesita tener al menos 4000 puntos para canjear</p>
-          </div>
-
-          <!-- Resumen visual -->
-          <div id="puntosSummaryBox" class="hidden bg-amber-950/40 border border-amber-500/30 rounded-xl p-3 space-y-1">
-            <div class="font-bold text-amber-300 text-[11px]">Resumen del programa:</div>
-            <div id="puntosSummaryText" class="text-[10px] text-slate-300 leading-relaxed"></div>
-          </div>
-
-          <button onclick="guardarConfigPuntos()" class="w-full py-2.5 bg-amber-600 hover:bg-amber-500 text-white font-bold rounded-xl active:scale-95 transition-all flex items-center justify-center gap-2 shadow-lg shadow-amber-600/20">
-            <i data-lucide="save" class="w-4 h-4"></i>
-            Guardar Configuración de Puntos
-          </button>
-        </div>
-      </div>
-
-      <!-- ============================================================== -->
-      <!-- MÓDULO: ANULACIÓN DE VENTAS Y RESTITUCIÓN DE INVENTARIO        -->
-      <!-- ============================================================== -->
-      <div class="bg-gradient-to-br from-rose-950/40 via-slate-900 to-slate-900 border border-rose-500/40 rounded-3xl p-4 space-y-3.5 shadow-xl">
-        <div class="flex items-center justify-between border-b border-rose-500/20 pb-2.5">
-          <div class="flex items-center gap-2 text-rose-400">
-            <div class="w-8 h-8 rounded-xl bg-rose-500/20 border border-rose-500/40 flex items-center justify-center">
-              <i data-lucide="rotate-ccw" class="w-4 h-4 text-rose-300"></i>
-            </div>
-            <div>
-              <h2 class="text-sm font-black text-white uppercase tracking-wider">Anulación de Ventas</h2>
-              <p class="text-[10px] text-rose-300/80 font-medium">Devuelve stock al dueño real y cancela CXC</p>
-            </div>
-          </div>
-          <span class="text-[9px] font-black uppercase px-2 py-0.5 rounded-lg bg-rose-950/80 border border-rose-500/40 text-rose-300 font-mono">Control</span>
-        </div>
-
-        <p class="text-xs text-slate-300 leading-relaxed bg-rose-950/20 border border-rose-500/20 rounded-xl p-2.5">
-          ℹ️ Al anular una venta, el inventario se devuelve automáticamente al vendedor que aportó el stock (Daniel o Carlos), se eliminan las Cuentas por Cobrar generadas y queda el registro permanente de auditoría de quién anuló.
-        </p>
-
-        <!-- Buscador / Selector de Venta para anular -->
-        <div class="space-y-2">
-          <label class="block font-bold text-xs text-slate-200">Seleccionar Venta para Anular:</label>
-          <div class="relative">
-            <input type="text" id="anularBusquedaVenta" oninput="filtrarVentasParaAnular()" placeholder="Buscar por ID (ej. VTA-...), cliente o producto..." class="w-full px-3 py-2.5 pl-8 bg-slate-950 border border-slate-700 rounded-xl text-xs text-white placeholder-slate-500 focus:outline-none focus:border-rose-500 font-mono">
-            <i data-lucide="search" class="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-3"></i>
-          </div>
-
-          <!-- Selector dropdown dinámico de ventas -->
-          <select id="anularSelectVenta" onchange="seleccionarVentaParaAnular()" class="w-full px-3 py-2.5 bg-slate-950 border border-slate-700 rounded-xl text-xs text-white font-medium focus:outline-none focus:border-rose-500">
-            <option value="">-- Elige una venta de la lista --</option>
+          <select id="pedidoClienteSelect" onchange="onPedidoClienteChange()" class="w-full px-3 py-2.5 bg-slate-950 border border-slate-700 rounded-xl text-xs text-white focus:outline-none focus:border-amber-500">
+            <option value="">-- Selecciona un cliente registrado --</option>
           </select>
         </div>
 
-        <!-- Tarjeta de detalle de la venta seleccionada -->
-        <div id="anularDetalleVentaBox" class="hidden space-y-3 bg-slate-950/80 border border-rose-500/30 rounded-2xl p-3 text-xs animate-pop-in">
-          <div class="flex items-center justify-between border-b border-slate-800 pb-2">
-            <div>
-              <span class="text-[10px] text-slate-400 font-mono">Factura:</span>
-              <span id="anularDetalleId" class="font-bold text-white font-mono ml-1">-</span>
-            </div>
-            <span id="anularDetalleVendedorFacturo" class="px-2 py-0.5 rounded text-[10px] font-bold">-</span>
+        <!-- Buscador dinámico de productos en Pedidos -->
+        <div class="space-y-1.5 relative">
+          <label class="block text-xs font-semibold text-slate-300 flex items-center justify-between">
+            <span>Agregar Licores *</span>
+            <span class="text-[10px] text-amber-400 font-normal">Búsqueda rápida</span>
+          </label>
+          <div class="relative">
+            <i data-lucide="search" class="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"></i>
+            <input type="text" id="pedidoBuscarProductoInput" oninput="buscarProductosParaPedido(this.value)" placeholder="Escribe nombre o código de licor..." autocomplete="off"
+              class="w-full pl-9 pr-8 py-2 bg-slate-950 border border-slate-700 rounded-xl text-xs text-white placeholder-slate-500 focus:outline-none focus:border-amber-500 transition-all">
+            <button type="button" onclick="limpiarBuscadorPedido()" id="btnLimpiarBuscadorPedido" class="hidden absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white text-xs">✕</button>
+          </div>
+          <!-- Dropdown flotante con resultados dinámicos -->
+          <div id="pedidoResultadosBusqueda" class="hidden absolute left-0 right-0 top-full mt-1 z-30 bg-slate-900 border border-amber-500/50 rounded-2xl max-h-56 overflow-y-auto shadow-2xl divide-y divide-slate-800"></div>
+        </div>
+
+        <div class="space-y-2">
+          <div class="flex items-center justify-between text-xs font-bold text-slate-300">
+            <span class="flex items-center gap-1">
+              <i data-lucide="layers" class="w-3.5 h-3.5 text-amber-400"></i>
+              Licores agregados (<span id="pedidoItemsCount">0</span>)
+            </span>
+            <span class="text-[10px] text-slate-400 font-normal">Escribe arriba para sumar</span>
           </div>
 
-          <div class="space-y-1 text-slate-300">
-            <div class="flex justify-between">
-              <span class="text-slate-400">Cliente:</span>
-              <span id="anularDetalleCliente" class="font-bold text-white">-</span>
-            </div>
-            <div class="flex justify-between">
-              <span class="text-slate-400">Fecha:</span>
-              <span id="anularDetalleFecha" class="font-mono text-slate-300">-</span>
-            </div>
-            <div class="flex justify-between">
-              <span class="text-slate-400">Monto Total:</span>
-              <span id="anularDetalleTotal" class="font-bold font-mono text-emerald-400">-</span>
-            </div>
+          <div id="pedidoItemsList" class="space-y-2 min-h-[50px] max-h-[220px] overflow-y-auto"></div>
+        </div>
+
+        <div class="p-3 bg-slate-950/80 rounded-2xl border border-slate-800 flex items-center justify-between font-mono">
+          <div>
+            <span class="text-[10px] text-slate-400 block font-sans">Total Botellas:</span>
+            <span class="text-sm font-bold text-amber-300" id="pedidoTotalUnidades">0 unids</span>
           </div>
-
-          <!-- Desglose de ítems y a quién regresa el inventario -->
-          <div class="border-t border-slate-800 pt-2 space-y-1.5">
-            <span class="text-[11px] font-bold text-slate-300 block">Productos a reintegrar al stock:</span>
-            <div id="anularDetalleItemsList" class="space-y-1.5">
-              <!-- Renderizado por JS -->
-            </div>
-          </div>
-
-          <!-- Campos de confirmación -->
-          <div class="border-t border-slate-800 pt-2.5 space-y-2.5">
-            <div>
-              <label class="block font-semibold text-slate-300 mb-1">¿Quién anula esta venta? *</label>
-              <select id="anularVendedorResponsable" class="w-full px-3 py-2 bg-slate-900 border border-rose-500/40 rounded-xl text-white font-bold text-xs">
-                <option value="Carlos">👤 Carlos</option>
-                <option value="Daniel">👤 Daniel</option>
-              </select>
-            </div>
-
-            <div>
-              <label class="block font-semibold text-slate-300 mb-1">Motivo de la anulación:</label>
-              <input type="text" id="anularMotivoInput" placeholder="Ej: Error en facturación, cliente canceló..." class="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-xl text-xs text-white placeholder-slate-500">
-            </div>
-
-            <button onclick="confirmarYEjecutarAnulacion()" class="w-full py-3 bg-rose-600 hover:bg-rose-500 text-white font-black text-xs uppercase tracking-wider rounded-xl shadow-lg shadow-rose-600/30 active:scale-95 transition-all flex items-center justify-center gap-2">
-              <i data-lucide="trash-2" class="w-4 h-4"></i>
-              <span>Confirmar Anulación de Venta</span>
-            </button>
+          <div class="text-right">
+            <span class="text-[10px] text-slate-400 block font-sans">Monto Venta Estimado:</span>
+            <span class="text-base font-black text-emerald-400" id="pedidoTotalCRC">₡0</span>
           </div>
         </div>
 
-        <!-- Historial Informativo de Ventas Anuladas -->
-        <div class="border-t border-slate-800/90 pt-3 space-y-2">
-          <div class="flex items-center justify-between">
-            <h3 class="text-xs font-bold text-slate-300 uppercase tracking-wider flex items-center gap-1.5">
-              <i data-lucide="clipboard-list" class="w-3.5 h-3.5 text-slate-400"></i>
-              <span>Historial Informativo de Anulaciones</span>
-            </h3>
-            <span id="anularCountBadge" class="text-[10px] font-mono px-2 py-0.5 rounded-full bg-slate-800 text-slate-400">0 registros</span>
-          </div>
-
-          <div id="anularHistorialList" class="space-y-2 max-h-60 overflow-y-auto pr-0.5">
-            <!-- Renderizado por JS -->
-          </div>
-        </div>
-      </div>
-
-      <!-- Reset & Reload Demo -->
-      <div class="bg-slate-800/40 border border-slate-800 rounded-2xl p-4 space-y-3 text-xs">
-        <div class="flex items-center justify-between">
-          <h4 class="font-bold text-slate-300">Mantenimiento y Actualizaciones</h4>
-          <span class="text-[10px] text-slate-500 font-mono">PWA Offline</span>
-        </div>
-
-        <!-- Botón Especial: Vaciar Caché y Actualizar App -->
-        <button onclick="forzarActualizacionApp()" class="w-full py-2.5 bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white font-bold rounded-xl shadow-lg shadow-cyan-600/25 active:scale-95 transition-all flex items-center justify-center gap-2">
-          <i data-lucide="refresh-cw" class="w-4 h-4"></i>
-          <span>Vaciar Caché y Forzar Actualización</span>
+        <button onclick="guardarPedidoActual()" class="w-full py-3 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 font-black rounded-2xl shadow-lg shadow-amber-500/20 active:scale-95 transition-all flex items-center justify-center gap-2 text-xs uppercase tracking-wider">
+          <i data-lucide="check-circle" class="w-4 h-4"></i>
+          <span>Confirmar y Enviar Pedido</span>
         </button>
-        <p class="text-[10px] text-slate-400 leading-tight">
-          💡 Úsalo en el celular si no ves los últimos cambios o botones nuevos. Elimina archivos guardados en caché y recarga la versión más reciente.
-        </p>
-
-        <div class="flex gap-2 pt-1 border-t border-slate-800/80">
-          <button onclick="recargarCatalogoSemilla()" class="flex-1 py-2.5 bg-slate-800 text-indigo-300 hover:text-white rounded-xl border border-indigo-500/40 font-semibold flex items-center justify-center gap-1.5 active:scale-95 transition-all">
-            <i data-lucide="cloud-download" class="w-4 h-4 text-indigo-400"></i>
-            <span>Descargar de Sheets</span>
-          </button>
-          <button onclick="limpiarCacheLocal()" class="py-2.5 px-3 bg-rose-950/40 border border-rose-800/50 text-rose-300 rounded-xl font-semibold active:scale-95 transition-all flex items-center gap-1">
-            <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
-            <span>Borrar Local</span>
-          </button>
-        </div>
       </div>
 
-      <!-- Extra spacer for mobile bottom navigation -->
-      <div style="height: 120px; width: 100%;" class="w-full block"></div>
+      <div class="bg-slate-900/80 border border-slate-800 rounded-3xl p-4 space-y-3 shadow-lg">
+        <div class="flex items-center justify-between border-b border-slate-800 pb-2">
+          <h3 class="text-xs font-bold text-white uppercase tracking-wider flex items-center gap-1.5">
+            <i data-lucide="clipboard-list" class="w-4 h-4 text-amber-400"></i>
+            <span>Mis Pedidos Realizados (<span id="misPedidosCount">0</span>)</span>
+          </h3>
+          <span class="text-[10px] text-slate-500 font-mono">Solo tuyos</span>
+        </div>
+
+        <div id="misPedidosList" class="space-y-2.5 max-h-[360px] overflow-y-auto"></div>
+      </div>
     </section>
 
-    <!-- ============================================================== -->
-    <!-- VIEW: COMISIONES PREVENTISTAS (13% APP SATÉLITE)               -->
-    <!-- ============================================================== -->
-    <section id="viewComisiones" class="space-y-4 hidden">
-      <!-- Encabezado de la Vista -->
-      <div class="bg-gradient-to-r from-emerald-950 via-slate-900 to-slate-950 border border-emerald-500/40 rounded-3xl p-4 shadow-xl space-y-3">
+    <!-- VIEW 3: FACTURAS / VENTAS CONCRETADAS -->
+    <section id="viewFacturas" class="space-y-3.5 hidden">
+      <div class="relative">
+        <i data-lucide="search" class="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400"></i>
+        <input type="text" id="searchFacturas" oninput="filtrarFacturas()" placeholder="Buscar por cliente o factura..." 
+          class="w-full pl-10 pr-4 py-2.5 bg-slate-900 border border-slate-700/80 rounded-2xl text-sm text-white placeholder-slate-400 focus:outline-none focus:border-amber-500 transition-all shadow-inner">
+      </div>
+
+      <div class="p-2.5 bg-slate-900/90 border border-slate-800 rounded-2xl flex items-center justify-between text-xs">
+        <div class="flex items-center gap-2">
+          <span class="w-2 h-2 rounded-full bg-emerald-400"></span>
+          <span class="text-slate-400">Facturas de mis pedidos:</span>
+          <span id="facturasCountBadge" class="font-bold text-amber-300 font-mono">0</span>
+        </div>
+        <button onclick="sincronizarConSheets(true)" title="Descargar facturas recientes desde Google Sheets" class="px-2.5 py-1 bg-amber-500/20 hover:bg-amber-500/30 border border-amber-500/40 text-amber-300 font-bold rounded-lg text-[11px] active:scale-95 transition-all flex items-center gap-1">
+          <i data-lucide="refresh-cw" class="w-3 h-3"></i>
+          <span>Descargar Facturas</span>
+        </button>
+      </div>
+
+      <div id="misFacturasList" class="space-y-2.5"></div>
+    </section>
+
+    <!-- VIEW 4: COMISIONES (13%) -->
+    <section id="viewComision" class="space-y-3.5 hidden">
+      <!-- Tarjeta Principal de Comisión Acumulada -->
+      <div class="bg-gradient-to-br from-emerald-950/70 via-slate-900 to-slate-950 border border-emerald-500/40 rounded-3xl p-4 shadow-xl space-y-3">
         <div class="flex items-center justify-between border-b border-emerald-500/20 pb-2.5">
-          <div class="flex items-center gap-2.5">
-            <div class="p-2.5 rounded-2xl bg-emerald-500/20 text-emerald-400">
+          <div class="flex items-center gap-2">
+            <div class="p-2 rounded-xl bg-emerald-500/20 text-emerald-300">
               <i data-lucide="badge-percent" class="w-5 h-5"></i>
             </div>
             <div>
-              <h2 class="text-xs font-bold text-white uppercase tracking-wider">Comisiones de Preventistas</h2>
-              <p class="text-[10px] text-emerald-400/90 font-mono">App Satélite • 13% sobre ventas facturadas</p>
+              <h2 class="text-xs font-bold text-white uppercase tracking-wider">Mis Comisiones</h2>
+              <span class="text-[10px] text-emerald-400/90 font-mono">13% sobre ventas facturadas</span>
             </div>
           </div>
-          <button onclick="sincronizarConSheets(true)" title="Sincronizar con Google Sheets" class="p-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl active:scale-95 transition-all">
-            <i data-lucide="refresh-cw" class="w-4 h-4 text-emerald-400"></i>
-          </button>
-        </div>
-
-        <!-- Tarjetas KPIs Globales -->
-        <div class="grid grid-cols-2 gap-2.5 font-mono">
-          <!-- Total Pendiente -->
-          <div class="p-3 bg-slate-950/80 rounded-2xl border border-amber-500/40 shadow-inner space-y-0.5">
-            <div class="flex items-center justify-between">
-              <span class="text-[9.5px] uppercase font-sans font-bold text-amber-300">Pendiente Total:</span>
-              <span class="w-2 h-2 rounded-full bg-amber-400 animate-pulse"></span>
-            </div>
-            <div class="text-lg font-black text-amber-400" id="comisionesGlobalPendienteCRC">₡0</div>
-            <div class="text-[10px] text-slate-400" id="comisionesGlobalPendienteUSD">$0.00 USD</div>
-            <span class="text-[9.5px] text-slate-500 font-sans block pt-1 border-t border-slate-800" id="comisionesGlobalPreventasCount">0 preventistas con saldo</span>
-          </div>
-
-          <!-- Total Ya Liquidado -->
-          <div class="p-3 bg-slate-950/80 rounded-2xl border border-emerald-500/30 shadow-inner space-y-0.5">
-            <div class="flex items-center justify-between">
-              <span class="text-[9.5px] uppercase font-sans font-bold text-emerald-300">Total Liquidado:</span>
-              <i data-lucide="check-circle" class="w-3.5 h-3.5 text-emerald-400"></i>
-            </div>
-            <div class="text-lg font-black text-emerald-400" id="comisionesGlobalLiquidadoCRC">₡0</div>
-            <div class="text-[10px] text-slate-400" id="comisionesGlobalLiquidadoUSD">$0.00 USD</div>
-            <span class="text-[9.5px] text-slate-500 font-sans block pt-1 border-t border-slate-800" id="comisionesGlobalLiquidacionesCount">0 liquidaciones registradas</span>
-          </div>
-        </div>
-
-        <!-- Filtro Selector de Preventista -->
-        <div class="pt-1">
-          <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1.5 font-sans">Filtrar Preventista:</label>
-          <div id="comisionesPillsVendedores" class="flex gap-1.5 overflow-x-auto pb-1 no-scrollbar text-xs font-mono font-medium">
-            <button onclick="filtrarPreventistaComision('todos')" id="pillPreventa-todos" class="px-3 py-1.5 rounded-xl bg-emerald-500 text-slate-950 font-bold text-[11px] shrink-0 transition-all">Todos</button>
-          </div>
-        </div>
-      </div>
-
-      <!-- Tarjetas Individuales por Preventista -->
-      <div class="space-y-3">
-        <div class="flex items-center justify-between px-1 text-xs">
-          <span class="font-bold text-slate-300 uppercase tracking-wider text-[11px] flex items-center gap-1.5">
-            <i data-lucide="users" class="w-4 h-4 text-emerald-400"></i>
-            <span>Balances por Preventista</span>
+          <span class="text-[10px] font-mono font-bold px-2 py-0.5 rounded-full bg-emerald-900/60 border border-emerald-500/30 text-emerald-300">
+            13% Ganancia
           </span>
-          <span class="text-[10px] text-slate-500 font-mono">13% automático</span>
         </div>
 
-        <div id="comisionesListaPreventistas" class="space-y-3">
-          <!-- Renderizado por JS -->
+        <div class="p-3.5 bg-slate-950/80 rounded-2xl border border-emerald-500/30 font-mono space-y-1.5">
+          <div class="flex items-center justify-between">
+            <span class="text-[10px] text-slate-400 block font-sans uppercase font-bold">Comisión Pendiente de Pago:</span>
+            <span id="comisionStatusBadge" class="text-[9.5px] px-2 py-0.5 rounded-full font-bold bg-amber-950/80 text-amber-300 border border-amber-500/40">⏳ Pendiente</span>
+          </div>
+          <div class="flex items-baseline gap-2">
+            <span class="text-2xl font-black text-amber-400" id="comisionTotalCRC">₡0</span>
+            <span class="text-xs text-slate-400" id="comisionTotalUSD">($0.00 USD)</span>
+          </div>
+          <div class="pt-2 border-t border-slate-800/80 grid grid-cols-2 gap-2 text-[11px] text-slate-300">
+            <div>
+              <span class="text-[10px] text-slate-400 block font-sans">Total Generado (13%):</span>
+              <b class="text-white" id="comisionVentasCRC">₡0</b>
+            </div>
+            <div class="text-right">
+              <span class="text-[10px] text-slate-400 block font-sans">Ya Liquidado (Cobrado):</span>
+              <b class="text-emerald-400" id="comisionLiquidadaCRC">₡0</b>
+            </div>
+          </div>
+        </div>
+
+        <!-- Filtros de Período -->
+        <div class="flex gap-1.5 overflow-x-auto pb-0.5 no-scrollbar text-xs font-medium font-mono">
+          <button onclick="filtrarPeriodoComision('todos')" id="btnPeriodo-todos" class="px-3 py-1.5 rounded-xl bg-emerald-500 text-slate-950 font-bold text-[11px] transition-all">Todos</button>
+          <button onclick="filtrarPeriodoComision('mes')" id="btnPeriodo-mes" class="px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 font-medium text-[11px] transition-all">Este Mes</button>
+          <button onclick="filtrarPeriodoComision('semana')" id="btnPeriodo-semana" class="px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 font-medium text-[11px] transition-all">Esta Semana</button>
+          <button onclick="filtrarPeriodoComision('hoy')" id="btnPeriodo-hoy" class="px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 font-medium text-[11px] transition-all">Hoy</button>
         </div>
       </div>
 
-      <!-- Historial Informativo de Liquidaciones Realizadas -->
+      <!-- Detalle por Venta -->
+      <div class="bg-slate-900/80 border border-slate-800 rounded-3xl p-4 space-y-3 shadow-lg">
+        <div class="flex items-center justify-between border-b border-slate-800 pb-2">
+          <h3 class="text-xs font-bold text-white uppercase tracking-wider flex items-center gap-1.5">
+            <i data-lucide="coins" class="w-4 h-4 text-emerald-400"></i>
+            <span>Desglose por Factura (<span id="comisionFacturasCount">0</span>)</span>
+          </h3>
+          <span class="text-[10px] text-slate-500 font-mono">Base 13%</span>
+        </div>
+
+        <div id="comisionDesgloseList" class="space-y-2.5 max-h-[380px] overflow-y-auto"></div>
+      </div>
+
+      <!-- Mis Recibos de Liquidación (Pagos Recibidos) -->
       <div class="bg-slate-900/80 border border-slate-800 rounded-3xl p-4 space-y-3 shadow-lg">
         <div class="flex items-center justify-between border-b border-slate-800 pb-2">
           <h3 class="text-xs font-bold text-white uppercase tracking-wider flex items-center gap-1.5">
             <i data-lucide="receipt" class="w-4 h-4 text-emerald-400"></i>
-            <span>Historial de Liquidaciones (<span id="comisionesHistorialCount">0</span>)</span>
+            <span>Mis Recibos de Pago (<span id="comisionRecibosCount">0</span>)</span>
           </h3>
-          <span class="text-[10px] text-slate-500 font-mono">Comprobantes de pago</span>
+          <span class="text-[10px] text-slate-500 font-mono">De Carlos y Daniel</span>
         </div>
 
-        <div id="comisionesHistorialLista" class="space-y-2.5 max-h-[360px] overflow-y-auto pr-0.5">
-          <!-- Renderizado por JS -->
+        <div id="comisionRecibosList" class="space-y-2.5 max-h-[320px] overflow-y-auto"></div>
+      </div>
+    </section>
+
+    <!-- VIEW 5: CLIENTES -->
+    <section id="viewClientes" class="space-y-3.5 hidden">
+      <div class="flex items-center gap-2">
+        <div class="relative flex-1">
+          <i data-lucide="search" class="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400"></i>
+          <input type="text" id="searchClientes" oninput="filtrarClientes()" placeholder="Buscar en mis clientes..." 
+            class="w-full pl-10 pr-4 py-2.5 bg-slate-900 border border-slate-700/80 rounded-2xl text-sm text-white placeholder-slate-400 focus:outline-none focus:border-amber-500 transition-all shadow-inner">
         </div>
+        <button onclick="abrirModalNuevoCliente()" class="px-3.5 py-2.5 bg-amber-600 hover:bg-amber-500 active:scale-95 text-slate-950 rounded-2xl font-bold text-xs flex items-center gap-1.5 shadow-lg shadow-amber-500/20 transition-all shrink-0">
+          <i data-lucide="user-plus" class="w-4 h-4"></i>
+          <span>+ Cliente</span>
+        </button>
       </div>
 
-      <!-- Extra spacer for mobile bottom navigation -->
-      <div style="height: 120px; width: 100%;" class="w-full block"></div>
+      <div class="p-2.5 bg-slate-900/90 border border-slate-800 rounded-2xl flex items-center justify-between text-xs">
+        <div class="flex items-center gap-2">
+          <span class="w-2 h-2 rounded-full bg-emerald-400"></span>
+          <span class="text-slate-400">Vendedor:</span>
+          <span id="clientesVendedorBadge" class="font-bold text-amber-300 font-mono">Mi Perfil</span>
+        </div>
+        <span class="text-[10px] text-slate-500 font-mono">🔒 Cartera privada</span>
+      </div>
+
+      <div id="misClientesList" class="space-y-2.5"></div>
     </section>
 
   </main>
 
-  <!-- ============================================================== -->
-  <!-- MODAL: CREAR / EDITAR PRODUCTO (DUAL CURRENCY)                 -->
-  <!-- ============================================================== -->
-    <!-- ============================================================== -->
-  <!-- MODAL: EXPORTAR CATÁLOGO / LISTA DE PRECIOS A WHATSAPP         -->
-  <!-- ============================================================== -->
-  <div id="modalExportarCatalogo" class="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm hidden items-end sm:items-center justify-center p-0 sm:p-4 animate-fade-in">
-    <div class="bg-slate-900 border border-slate-800 rounded-t-3xl sm:rounded-3xl max-w-lg w-full p-5 space-y-4 max-h-[90vh] overflow-y-auto animate-slide-up shadow-2xl">
-      <!-- Encabezado Modal -->
-      <div class="flex items-center justify-between border-b border-slate-800 pb-3">
-        <div class="flex items-center gap-2">
-          <div class="p-2 rounded-xl bg-emerald-500/20 text-emerald-400">
-            <i data-lucide="share-2" class="w-5 h-5"></i>
-          </div>
-          <div>
-            <h3 class="text-sm font-bold text-white">Exportar Catálogo para WhatsApp</h3>
-            <p class="text-[11px] text-slate-400">Precios actualizados y existencias disponibles</p>
-          </div>
-        </div>
-        <button onclick="cerrarModalExportarCatalogo()" class="p-1 text-slate-400 hover:text-white active:scale-95">
-          <i data-lucide="x" class="w-5 h-5"></i>
-        </button>
-      </div>
-
-      <!-- Opciones de Configuración del Exportable -->
-      <div class="grid grid-cols-2 gap-2 text-xs font-semibold">
-        <div>
-          <label class="block text-slate-400 text-[10px] uppercase font-bold mb-1">Filtro de Productos:</label>
-          <select id="exportFiltroStock" onchange="actualizarVistaPreviaExportarCatalogo()" class="w-full px-2.5 py-2 bg-slate-800 border border-slate-700 rounded-xl text-white text-xs">
-            <option value="constock">📦 Solo con Stock (> 0)</option>
-            <option value="todos">📋 Todo el Catálogo</option>
-          </select>
-        </div>
-        <div>
-          <label class="block text-slate-400 text-[10px] uppercase font-bold mb-1">Categoría:</label>
-          <select id="exportFiltroCategoria" onchange="actualizarVistaPreviaExportarCatalogo()" class="w-full px-2.5 py-2 bg-slate-800 border border-slate-700 rounded-xl text-white text-xs">
-            <option value="Todas">Todas las categorías</option>
-          </select>
-        </div>
-        <div class="col-span-2 flex items-center justify-between px-3 py-2 bg-slate-950/70 border border-slate-800 rounded-xl">
-          <span class="text-slate-300 text-xs font-medium">Mostrar cantidad de unidades:</span>
-          <label class="relative inline-flex items-center cursor-pointer">
-            <input type="checkbox" id="exportMostrarCantidades" onchange="actualizarVistaPreviaExportarCatalogo()" class="sr-only peer" checked>
-            <div class="w-9 h-5 bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-emerald-600"></div>
-          </label>
-        </div>
-      </div>
-
-      <!-- Resumen y Vista Previa -->
-      <div>
-        <div class="flex items-center justify-between text-xs mb-1.5 px-1">
-          <span class="font-bold text-slate-400 uppercase text-[10px] tracking-wider">Vista Previa (<span id="exportItemsCount" class="text-emerald-400">0</span> licores):</span>
-          <button type="button" onclick="actualizarVistaPreviaExportarCatalogo()" class="text-[10px] text-indigo-400 hover:text-indigo-300 font-bold flex items-center gap-1">
-            <i data-lucide="refresh-cw" class="w-3 h-3"></i> Refrescar
-          </button>
-        </div>
-        <textarea id="exportPreviewText" readonly rows="8" class="w-full px-3 py-2.5 bg-slate-950 border border-slate-800 rounded-2xl text-[11px] font-mono text-emerald-300/90 select-all focus:outline-none resize-none leading-relaxed"></textarea>
-      </div>
-
-      <!-- Botones de Acción -->
-      <div class="grid grid-cols-2 gap-2 pt-2 border-t border-slate-800">
-        <button type="button" onclick="copiarTextoCatalogoWhatsApp()" class="py-3 px-3 bg-slate-800 hover:bg-slate-750 border border-slate-700 active:scale-95 text-slate-200 font-bold text-xs rounded-xl flex items-center justify-center gap-1.5 transition-all">
-          <i data-lucide="copy" class="w-4 h-4 text-amber-400"></i>
-          <span>Copiar Texto</span>
-        </button>
-        <button type="button" onclick="enviarCatalogoWhatsAppDirecto()" class="py-3 px-3 bg-emerald-600 hover:bg-emerald-500 active:scale-95 text-white font-bold text-xs rounded-xl flex items-center justify-center gap-1.5 shadow-lg shadow-emerald-600/30 transition-all">
-          <i data-lucide="message-circle" class="w-4 h-4"></i>
-          <span>Abrir WhatsApp</span>
-        </button>
-      </div>
-    </div>
-  </div>
-<div id="modalProducto" class="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm hidden items-end sm:items-center justify-center p-0 sm:p-4">
-    <div class="bg-slate-900 border border-slate-800 rounded-t-3xl sm:rounded-3xl max-w-md w-full p-5 space-y-4 max-h-[90vh] overflow-y-auto animate-slide-up">
-      <div class="flex items-center justify-between border-b border-slate-800 pb-3">
-        <h3 id="modalProductoTitulo" class="text-base font-bold text-white flex items-center gap-2">
-          <i data-lucide="wine" class="w-5 h-5 text-amber-400"></i>
-          Nuevo Producto
-        </h3>
-        <button onclick="cerrarModalProducto()" class="p-1 text-slate-400 hover:text-white">
-          <i data-lucide="x" class="w-5 h-5"></i>
-        </button>
-      </div>
-
-      <form id="formProducto" onsubmit="guardarProductoForm(event)" class="space-y-3 text-xs">
-        <!-- Code / Barcode -->
-        <div>
-          <label class="block font-semibold text-slate-300 mb-1">Código / SKU (Llave única) *</label>
-          <div class="flex gap-2">
-            <input type="text" id="prodCodigo" required placeholder="Ej. WHI-001" class="flex-1 px-3 py-2.5 bg-slate-800 border border-slate-700 rounded-xl text-white font-mono">
-            <button type="button" onclick="abrirEscaner('nuevo_producto')" class="px-3 bg-indigo-600 text-white rounded-xl active:scale-95">
-              <i data-lucide="scan-barcode" class="w-4 h-4"></i>
-            </button>
-          </div>
-        </div>
-
-        <!-- Name -->
-        <div>
-          <label class="block font-semibold text-slate-300 mb-1">Nombre del Producto *</label>
-          <input type="text" id="prodNombre" required placeholder="Ej. Johnnie Walker Black Label litro" class="w-full px-3 py-2.5 bg-slate-800 border border-slate-700 rounded-xl text-white">
-        </div>
-
-        <!-- Category -->
-        <div>
-          <label class="block font-semibold text-slate-300 mb-1">Categoría</label>
-          <input type="text" id="prodCategoria" list="categoriasList" placeholder="Ej. WHISKY/WHISKEY, RON, TEQUILA..." class="w-full px-3 py-2.5 bg-slate-800 border border-slate-700 rounded-xl text-white">
-          <datalist id="categoriasList">
-            <option value="WHISKY/WHISKEY">
-            <option value="BOURBON">
-            <option value="RON">
-            <option value="VODKA">
-            <option value="TEQUILA">
-            <option value="LICORES VARIOS">
-            <option value="CREMAS">
-            <option value="VINO">
-          </datalist>
-        </div>
-
-        <!-- Product Photo / Google Drive Image / Upload -->
-        <div class="bg-slate-950/80 p-3.5 rounded-2xl border border-slate-800 space-y-3">
-          <div class="flex items-center justify-between">
-            <label class="block font-bold text-slate-200 text-xs flex items-center gap-1.5">
-              <i data-lucide="image" class="w-4 h-4 text-amber-400"></i>
-              <span>Foto del Licor</span>
-            </label>
-            <button type="button" onclick="limpiarImagenModal()" id="btnLimpiarImagen" class="hidden text-[11px] text-rose-400 hover:text-rose-300 font-bold hover:underline">Quitar foto</button>
-          </div>
-          
-          <div class="flex items-center gap-3.5">
-            <!-- Preview Box (Grande 20x20) -->
-            <div id="modalImgPreviewContainer" class="relative w-20 h-20 rounded-2xl bg-slate-900 border border-slate-700 flex items-center justify-center shrink-0 overflow-hidden shadow-inner">
-              <img id="prodImagenPreview" alt="Preview" class="hidden w-full h-full object-cover" onerror="if(typeof onImgPreviewError==='function')onImgPreviewError()">
-              <div id="prodImagenPlaceholder" class="flex flex-col items-center justify-center text-slate-500 text-[10px]">
-                <i data-lucide="wine" class="w-8 h-8 text-slate-600 mb-0.5"></i>
-                <span>Sin foto</span>
-              </div>
-            </div>
-
-            <!-- Inputs: Link o Subir Archivo -->
-            <div class="flex-1 space-y-2">
-              <input type="text" id="prodImagenUrl" oninput="actualizarPreviewImagenModal()" placeholder="Pega link de Drive / web o sube archivo..." class="w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded-xl text-white font-mono text-xs focus:outline-none focus:border-amber-400">
-              
-              <div class="flex items-center gap-2">
-                <label class="flex-1 py-1.5 px-2 bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-300 rounded-xl text-[11px] font-bold flex items-center justify-center gap-1 cursor-pointer active:scale-95 transition-all">
-                  <i data-lucide="upload" class="w-3.5 h-3.5 text-amber-400"></i>
-                  <span>Subir desde dispositivo</span>
-                  <input type="file" accept="image/*" onchange="manejarSubidaImagenProducto(event)" class="hidden">
-                </label>
-              </div>
-              <p class="text-[10px] text-slate-400 leading-tight">
-                💡 Soporta fotos locales, links de Google Drive o URLs directas.
-              </p>
-            </div>
-          </div>
-        </div>
-
-        <!-- SECCIÓN 1: COSTOS Y MARGEN DE GANANCIA (%) -->
-        <div class="bg-slate-950/70 p-3.5 rounded-2xl border border-slate-800 space-y-3">
-          <div class="flex items-center justify-between border-b border-slate-800/80 pb-1.5">
-            <span class="font-bold text-amber-400 text-xs flex items-center gap-1.5">
-              <i data-lucide="calculator" class="w-3.5 h-3.5"></i>
-              <span>1. Costo y Margen de Ganancia</span>
-            </span>
-            <span class="text-[10px] text-slate-400 font-mono">Paso inicial</span>
-          </div>
-
-          <div class="grid grid-cols-2 gap-3">
-            <!-- Costo USD -->
-            <div>
-              <label class="block font-semibold text-slate-300 mb-1">Precio Costo USD ($) *</label>
-              <input type="number" step="0.01" min="0" id="prodCostoRefUSD" value="0" oninput="calcularMargenYPrecioRecomendado('costoUSD')" placeholder="0.00" class="w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded-xl text-white font-mono font-bold focus:border-amber-400">
-            </div>
-            <!-- Costo CRC Automático -->
-            <div>
-              <label class="block font-semibold text-slate-300 mb-1">Costo CRC (₡ Automático)</label>
-              <input type="number" step="1" id="prodCostoRefCRC" value="0" readonly class="w-full px-3 py-2 bg-slate-900/90 border border-slate-800 rounded-xl text-slate-400 font-mono font-bold cursor-not-allowed">
-            </div>
-          </div>
-
-          <div class="grid grid-cols-2 gap-3">
-            <!-- Margen % -->
-            <div>
-              <label class="block font-semibold text-slate-300 mb-1">Margen Deseado (%)</label>
-              <div class="relative">
-                <input type="number" step="0.5" id="prodMargenPorcentaje" value="70" oninput="calcularMargenYPrecioRecomendado('margen')" placeholder="70" class="w-full px-3 py-2 bg-slate-800 border border-amber-500/40 rounded-xl text-amber-300 font-mono font-bold focus:border-amber-400">
-                <span class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 font-bold font-mono text-xs">%</span>
-              </div>
-            </div>
-            <!-- Precio Recomendado Calculado -->
-            <div>
-              <label class="block font-semibold text-emerald-400 mb-1">Precio Recomendado ($)</label>
-              <div class="flex items-center gap-1.5">
-                <input type="number" step="0.01" id="prodPrecioRecomendadoUSD" value="0" readonly class="w-full px-3 py-2 bg-emerald-950/40 border border-emerald-500/40 rounded-xl text-emerald-300 font-mono font-black text-xs cursor-default">
-                <button type="button" onclick="aplicarPrecioRecomendado()" title="Usar este precio de venta" class="px-2.5 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-[11px] font-bold active:scale-95 transition-all">
-                  Usar
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- SECCIÓN 2: PRECIO DE VENTA FINAL (MANUAL Y DIGITABLE) -->
-        <div class="bg-slate-950/70 p-3.5 rounded-2xl border border-slate-800 space-y-2.5">
-          <div class="flex items-center justify-between border-b border-slate-800/80 pb-1.5">
-            <span class="font-bold text-emerald-400 text-xs flex items-center gap-1.5">
-              <i data-lucide="tag" class="w-3.5 h-3.5"></i>
-              <span>2. Precio de Venta al Público</span>
-            </span>
-            <span class="text-[10px] text-slate-400 font-mono">Editable</span>
-          </div>
-
-          <div class="grid grid-cols-2 gap-3">
-            <div>
-              <label class="block font-semibold text-slate-300 mb-1">Precio Venta USD ($) *</label>
-              <input type="number" step="0.01" id="prodPrecioVentaUSD" value="0" oninput="autoConvertirPrecio('USD')" class="w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded-xl text-white font-mono font-black text-sm focus:border-emerald-500">
-            </div>
-            <div>
-              <label class="block font-semibold text-slate-300 mb-1">Precio Venta CRC (₡) *</label>
-              <input type="number" step="1" id="prodPrecioVentaCRC" value="0" oninput="autoConvertirPrecio('CRC')" class="w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded-xl text-white font-mono font-black text-sm focus:border-emerald-500">
-            </div>
-          </div>
-        </div>
-
-        <!-- Stock Inicial oculto (no se usa: el stock se calcula desde compras - ventas) -->
-        <input type="hidden" id="prodStock" value="0">
-
-        <!-- Stock Minimo -->
-        <div>
-          <label class="block font-semibold text-slate-300 mb-1">Stock Mínimo (Alerta)</label>
-          <input type="number" id="prodStockMinimo" min="0" value="2" class="w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded-xl text-white font-mono">
-        </div>
-
-        <!-- Submit & Delete actions -->
-        <div class="pt-2 space-y-2">
-          <button type="submit" class="w-full py-3 bg-indigo-600 hover:bg-indigo-500 text-white font-bold rounded-xl shadow-lg shadow-indigo-600/30 active:scale-95 transition-all flex items-center justify-center gap-2">
-            <i data-lucide="check" class="w-4 h-4"></i>
-            Guardar Producto
-          </button>
-          <button type="button" id="btnEliminarProducto" onclick="eliminarProductoActual()" class="hidden w-full py-2 bg-rose-950/40 border border-rose-800/50 text-rose-400 font-semibold rounded-xl active:scale-95">
-            Eliminar Producto
-          </button>
-        </div>
-      </form>
-    </div>
-  </div>
-
-  <!-- ============================================================== -->
-  <!-- MODAL: NUEVO / EDITAR CLIENTE                                  -->
-  <!-- ============================================================== -->
-  <div id="modalCliente" class="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm hidden items-center justify-center p-4">
-    <div class="bg-slate-900 border border-slate-700 rounded-3xl w-full max-w-sm shadow-2xl overflow-hidden animate-pop-in">
-      <div class="flex items-center justify-between p-4 border-b border-slate-800">
-        <h2 class="font-black text-white flex items-center gap-2">
-          <span class="w-7 h-7 rounded-xl bg-indigo-600/20 border border-indigo-500/30 flex items-center justify-center text-indigo-400 text-sm">👤</span>
-          <span>Cliente</span>
-        </h2>
-        <div class="flex items-center gap-2">
-          <span id="modalClienteId" class="text-[10px] font-mono text-slate-400 bg-slate-800 px-2 py-0.5 rounded-lg border border-slate-700">Nuevo</span>
-          <button onclick="cerrarModalCliente()" class="w-8 h-8 rounded-xl bg-slate-800 text-slate-400 hover:text-white flex items-center justify-center active:scale-95 transition-all">
-            <i data-lucide="x" class="w-4 h-4"></i>
-          </button>
-        </div>
-      </div>
-      <div class="p-4 space-y-3.5">
-        <div>
-          <label class="text-xs font-semibold text-slate-300 mb-1 block">Nombre completo *</label>
-          <input type="text" id="modalClienteNombre" placeholder="Ej: Juan Pérez" autocomplete="off"
-            class="w-full px-3 py-2.5 bg-slate-800 border border-slate-700 rounded-xl text-sm text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all">
-        </div>
-        <div>
-          <label class="text-xs font-semibold text-slate-300 mb-1 block">Teléfono / WhatsApp * <span class="text-slate-500 text-[11px] font-normal">(Identificador único)</span></label>
-          <input type="tel" id="modalClienteTelefono" placeholder="Ej: 8888-8888" autocomplete="off"
-            class="w-full px-3 py-2.5 bg-slate-800 border border-slate-700 rounded-xl text-sm text-white placeholder-slate-500 font-mono focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all">
-        </div>
-        <div>
-          <label class="text-xs font-semibold text-slate-300 mb-1 block">Puntos acumulados</label>
-          <input type="number" id="modalClientePuntos" value="0" min="0"
-            class="w-full px-3 py-2.5 bg-slate-800 border border-slate-700 rounded-xl text-sm text-amber-300 font-mono font-bold focus:outline-none focus:border-amber-500 transition-all">
-        </div>
-        <div class="pt-1 space-y-2">
-          <button onclick="guardarClienteForm()" class="w-full py-3 bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-sm rounded-2xl active:scale-95 transition-all flex items-center justify-center gap-2 shadow-lg shadow-indigo-600/30">
-            <i data-lucide="check" class="w-4 h-4"></i>
-            <span>Guardar Cliente</span>
-          </button>
-          <button id="btnEliminarCliente" onclick="eliminarClienteActual()" class="hidden w-full py-2 bg-rose-950/40 border border-rose-800/50 hover:bg-rose-900/40 text-rose-400 font-semibold rounded-xl text-xs active:scale-95 transition-all">
-            Eliminar Cliente
-          </button>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- ============================================================== -->
-  <!-- MODAL: CANJE DE PUNTOS                                         -->
-  <!-- ============================================================== -->
-  <div id="modalCanjeoPuntos" class="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm hidden items-center justify-center p-4">
-    <div class="bg-slate-900 border border-amber-500/30 rounded-3xl w-full max-w-sm shadow-2xl overflow-hidden animate-pop-in">
-      <div class="flex items-center justify-between p-4 border-b border-slate-800">
-        <h2 class="font-black text-amber-300 flex items-center gap-2">
-          <span class="w-7 h-7 rounded-xl bg-amber-500/20 border border-amber-500/30 flex items-center justify-center text-sm">🎁</span>
-          <span>Canjear Puntos</span>
-        </h2>
-        <button onclick="cerrarModalCanjeoPuntos()" class="w-8 h-8 rounded-xl bg-slate-800 text-slate-400 hover:text-white flex items-center justify-center active:scale-95 transition-all">
-          <i data-lucide="x" class="w-4 h-4"></i>
-        </button>
-      </div>
-      <div class="p-4 space-y-4">
-        <div class="grid grid-cols-2 gap-2 text-xs">
-          <div class="p-2.5 bg-slate-800 rounded-xl border border-slate-700/80">
-            <div class="text-slate-400">Puntos disponibles</div>
-            <div id="canjePuntosDisponibles" class="text-lg font-black text-amber-400 font-mono">0</div>
-          </div>
-          <div class="p-2.5 bg-slate-800 rounded-xl border border-slate-700/80">
-            <div class="text-slate-400">Valor total</div>
-            <div id="canjePuntosValor" class="text-lg font-black text-emerald-400 font-mono">₡0</div>
-          </div>
-        </div>
-        <div>
-          <label class="text-xs text-slate-400 mb-2 block">Descuento a aplicar: <span id="canjePuntosMax" class="text-amber-300 font-bold font-mono">₡0</span></label>
-          <input type="range" id="canjePuntosSlider" min="0" max="100" value="100" oninput="actualizarSliderCanje()" class="w-full accent-amber-500 cursor-pointer">
-          <p id="canjePuntosResumen" class="text-center text-xs font-bold text-amber-300 mt-2 bg-amber-950/40 py-1.5 px-3 rounded-xl border border-amber-500/30"></p>
-        </div>
-        <button onclick="confirmarCanjeoPuntos()" class="w-full py-3 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 font-extrabold text-sm rounded-2xl active:scale-95 transition-all flex items-center justify-center gap-2 shadow-lg shadow-amber-500/20">
-          🎁 Aplicar Descuento
-        </button>
-        <button onclick="cerrarModalCanjeoPuntos()" class="w-full py-2 text-slate-400 hover:text-white text-xs font-semibold active:scale-95 transition-all">Cancelar</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- ============================================================== -->
-  <!-- MODAL: EDITAR PRECIO DE ÍTEM EN EL CARRITO                    -->
-  <!-- ============================================================== -->
-  <div id="modalEditarPrecio" class="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm hidden items-center justify-center p-4">
-    <div class="bg-slate-900 border border-slate-700 rounded-3xl w-full max-w-xs shadow-2xl overflow-hidden animate-pop-in">
-      <div class="flex items-center justify-between p-4 border-b border-slate-800">
-        <h2 class="font-black text-white text-sm flex items-center gap-2">
-          <span class="w-6 h-6 rounded-lg bg-amber-500/20 border border-amber-500/30 flex items-center justify-center text-xs">✏️</span>
-          <span>Editar Precio de Venta</span>
-        </h2>
-        <button onclick="cerrarModalEditarPrecio()" class="w-8 h-8 rounded-xl bg-slate-800 text-slate-400 hover:text-white flex items-center justify-center active:scale-95 transition-all">
-          <i data-lucide="x" class="w-4 h-4"></i>
-        </button>
-      </div>
-      <div class="p-4 space-y-3.5">
-        <div class="text-center bg-slate-800/60 p-2.5 rounded-xl border border-slate-700/60">
-          <div id="editPrecioProductoNombre" class="text-xs font-bold text-white mb-0.5 truncate"></div>
-          <div class="text-[11px] text-slate-400">Precio catálogo: <span id="editPrecioOriginal" class="font-mono text-slate-300 font-bold"></span></div>
-        </div>
-        <div>
-          <div class="flex items-center justify-between mb-1">
-            <label class="text-xs font-semibold text-slate-300">Nuevo precio de venta</label>
-            <span id="editPrecioEquivUSD" class="text-[11px] font-mono text-emerald-400 font-bold"></span>
-          </div>
-          <div class="relative">
-            <span class="absolute left-3 top-1/2 -translate-y-1/2 text-amber-400 font-black font-mono text-lg">₡</span>
-            <input type="number" id="editPrecioInput" min="0" step="100" 
-              oninput="actualizarPreviewPrecioUSD()" 
-              onkeydown="if(event.key==='Enter'){event.preventDefault();aplicarNuevoPrecioCarrito();}"
-              class="w-full pl-8 pr-3 py-3 bg-slate-800 border border-amber-500/60 rounded-xl text-xl text-amber-300 font-black font-mono text-center focus:outline-none focus:border-amber-400 focus:ring-1 focus:ring-amber-400">
-          </div>
-          <input type="hidden" id="editPrecioCodigo">
-        </div>
-        
-        <!-- Botones rápidos de ajuste / descuento -->
-        <div class="grid grid-cols-3 gap-1.5 pt-0.5">
-          <button type="button" onclick="ajustarPrecioDescuento(0.05)" class="py-1 px-1 bg-slate-800 hover:bg-slate-750 border border-slate-700 rounded-lg text-[10px] font-bold text-slate-300 active:scale-95 transition-all">-5% desc.</button>
-          <button type="button" onclick="ajustarPrecioDescuento(0.10)" class="py-1 px-1 bg-slate-800 hover:bg-slate-750 border border-slate-700 rounded-lg text-[10px] font-bold text-slate-300 active:scale-95 transition-all">-10% desc.</button>
-          <button type="button" onclick="restablecerPrecioOriginal()" class="py-1 px-1 bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/30 rounded-lg text-[10px] font-bold text-amber-300 active:scale-95 transition-all">Original</button>
-        </div>
-
-        <div class="space-y-1.5 pt-1">
-          <button onclick="aplicarNuevoPrecioCarrito()" class="w-full py-3 bg-amber-500 hover:bg-amber-400 text-slate-950 font-extrabold text-xs rounded-2xl active:scale-95 transition-all shadow-lg shadow-amber-500/20">
-            Aplicar Precio
-          </button>
-          <button onclick="cerrarModalEditarPrecio()" class="w-full py-1.5 text-slate-400 hover:text-white text-xs font-semibold transition-all">Cancelar</button>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- ============================================================== -->
-  <!-- MODAL: FOTO EN PANTALLA COMPLETA (LIGHTBOX)                   -->
-  <!-- ============================================================== -->
-  <div id="modalFotoCompleta" class="fixed inset-0 z-[60] bg-black hidden items-center justify-center" onclick="cerrarFotoCompleta()">
-    <div class="relative w-full h-full flex flex-col items-center justify-center p-4" onclick="event.stopPropagation()">
-
-      <!-- Botón cerrar -->
-      <button onclick="cerrarFotoCompleta()" class="absolute top-4 right-4 z-10 w-10 h-10 bg-white/10 hover:bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center active:scale-90 transition-all">
-        <i data-lucide="x" class="w-5 h-5 text-white"></i>
-      </button>
-
-      <!-- Nombre del producto -->
-      <div id="fotoCompletaNombre" class="absolute top-4 left-4 right-16 z-10">
-        <p class="text-white font-bold text-sm drop-shadow-lg truncate bg-black/40 px-3 py-1.5 rounded-xl backdrop-blur-sm"></p>
-      </div>
-
-      <!-- Imagen a pantalla completa -->
-      <img id="fotoCompletaImg"
-        src=""
-        alt="Foto del Licor"
-        class="max-w-full max-h-full object-contain rounded-2xl shadow-2xl"
-        style="max-height: calc(100vh - 80px); max-width: calc(100vw - 32px);"
-      >
-
-      <!-- Botón de compartir / descargar -->
-      <div class="absolute bottom-6 left-0 right-0 flex justify-center gap-3">
-        <button onclick="cerrarFotoCompleta()" class="px-5 py-2.5 bg-white/10 hover:bg-white/20 backdrop-blur-sm text-white font-semibold rounded-2xl text-sm active:scale-95 transition-all flex items-center gap-2">
-          <i data-lucide="x" class="w-4 h-4"></i>
-          Cerrar
-        </button>
-      </div>
-
-    </div>
-  </div>
-
-  <!-- ============================================================== -->
-  <!-- MODAL: ESCÃNER DE CÓDIGO DE BARRAS / QR                        -->
-  <!-- ============================================================== -->
-  <div id="modalEscaner" class="fixed inset-0 z-50 bg-black/90 backdrop-blur-md hidden items-center justify-center p-4">
-    <div class="bg-slate-900 border border-slate-800 rounded-3xl max-w-sm w-full p-4 space-y-4 shadow-2xl relative">
-      <div class="flex items-center justify-between border-b border-slate-800 pb-2">
-        <h3 class="text-sm font-bold text-white flex items-center gap-2">
-          <i data-lucide="camera" class="w-4 h-4 text-indigo-400"></i>
-          Escaneando Código
-        </h3>
-        <button onclick="cerrarEscaner()" class="p-1 text-slate-400 hover:text-white">
-          <i data-lucide="x" class="w-5 h-5"></i>
-        </button>
-      </div>
-
-      <div class="relative overflow-hidden rounded-2xl bg-black aspect-square flex items-center justify-center">
-        <div id="reader" class="w-full h-full"></div>
-      </div>
-
-      <p class="text-center text-xs text-slate-400">Apunta la cámara al código de barras del producto</p>
-
-      <button onclick="cerrarEscaner()" class="w-full py-2.5 bg-slate-800 text-slate-300 font-semibold text-xs rounded-xl active:scale-95">
-        Cancelar
-      </button>
-    </div>
-  </div>
-
-  <!-- ============================================================== -->
-  <!-- MODAL: RECIBO / COMPROBANTE WHATSAPP                           -->
-  <!-- ============================================================== -->
-  <div id="modalRecibo" class="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm hidden items-center justify-center p-4">
-    <div class="bg-white text-slate-900 rounded-3xl max-w-sm w-full p-5 space-y-4 shadow-2xl animate-pop-in">
-      <div class="text-center space-y-1 border-b border-dashed border-slate-300 pb-3">
-        <div class="w-14 h-14 rounded-full border-2 border-amber-500/60 p-0.5 bg-black mx-auto shadow-md mb-1.5 overflow-hidden">
-          <img src="logo.png" alt="DC El Destape" class="w-full h-full object-cover rounded-full">
-        </div>
-        <h3 class="font-black text-base text-slate-900 uppercase tracking-wide" id="reciboNegocio">DC El Destape Licores</h3>
-        <p class="text-[11px] font-bold text-amber-700 font-mono">Tel: +506 8992-7936</p>
-        <p class="text-xs text-slate-500 font-mono font-bold pt-1" id="reciboId">VTA-001</p>
-        <p class="text-xs text-slate-500" id="reciboFecha">28/08/2026 08:00</p>
-      </div>
-
-      <!-- Items in receipt -->
-      <div id="reciboItems" class="space-y-1.5 text-xs divide-y divide-slate-100 max-h-48 overflow-y-auto"></div>
-
-      <!-- Receipt total -->
-      <div class="border-t border-dashed border-slate-300 pt-3 space-y-1 text-xs">
-        <div class="flex justify-between font-medium text-slate-600">
-          <span>Método de Pago:</span>
-          <span id="reciboMetodo" class="font-bold text-slate-900">Efectivo</span>
-        </div>
-        <div id="reciboPuntosRow" class="hidden justify-between font-bold text-amber-700 bg-amber-50 p-1.5 rounded-lg border border-amber-200">
-          <span>🎁 Puntos de Fidelización:</span>
-          <span id="reciboPuntosGanados" class="font-mono">+0 pts</span>
-        </div>
-        <div class="flex justify-between text-base font-black text-slate-900 pt-1 font-mono">
-          <span>TOTAL:</span>
-          <div class="text-right">
-            <span id="reciboTotalCRC">₡0</span>
-            <span class="text-xs text-slate-500 block font-normal" id="reciboTotalUSD">($0.00 USD)</span>
-          </div>
-        </div>
-      </div>
-
-      <!-- Trazabilidad de preventa -->
-      <div id="reciboTrazabilidad" class="hidden"></div>
-
-      <div class="space-y-2 pt-2 text-xs">
-        <button onclick="compartirReciboWhatsApp()" class="w-full py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-2xl flex items-center justify-center gap-2 shadow-lg shadow-emerald-600/30 active:scale-95 transition-all">
-          <i data-lucide="message-circle" class="w-4 h-4"></i>
-          Enviar Ticket por WhatsApp
-        </button>
-        <button onclick="cerrarModalRecibo()" class="w-full py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-2xl active:scale-95 transition-all">
-          Listo / Nueva Venta
-        </button>
-      </div>
-    </div>
-  </div>
-
-  <!-- ============================================================== -->
-  <!-- MODAL: SELECCIÓN DE VENDEDOR (LOGIN / SWITCH)                  -->
-  <!-- ============================================================== -->
-  <div id="modalLoginVendedor" class="fixed inset-0 z-50 bg-black/90 backdrop-blur-md hidden items-center justify-center p-4">
-    <div class="bg-slate-900 border border-slate-800 rounded-3xl max-w-sm w-full p-6 space-y-5 text-center shadow-2xl animate-pop-in">
-      <div class="w-20 h-20 mx-auto rounded-full border-2 border-amber-400/80 p-0.5 bg-black shadow-2xl shadow-amber-500/30 overflow-hidden">
-        <img src="logo.png" alt="DC El Destape" class="w-full h-full object-cover rounded-full">
-      </div>
-      <div>
-        <h3 class="text-base font-black text-white tracking-wide uppercase">DC EL DESTAPE LICORES</h3>
-        <p class="text-xs text-amber-300/90 font-semibold mt-0.5">¿Quién está ingresando al sistema?</p>
-      </div>
-
-      <div class="grid grid-cols-2 gap-3 pt-1">
-        <!-- Perfil Carlos -->
-        <button onclick="seleccionarVendedorLogin('Carlos')" class="p-4 bg-slate-800/90 hover:bg-slate-800 border-2 border-indigo-500/40 hover:border-indigo-500 rounded-2xl flex flex-col items-center gap-2 group active:scale-95 transition-all shadow-lg">
-          <div class="w-12 h-12 rounded-full bg-blue-600/20 border border-blue-500/50 flex items-center justify-center text-blue-400 font-black text-xl group-hover:scale-105 transition-all">
-            C
-          </div>
-          <div>
-            <div class="font-extrabold text-white text-sm">Carlos</div>
-            <div class="text-[10px] text-indigo-300 font-medium">Vendedor</div>
-          </div>
-        </button>
-
-        <!-- Perfil Daniel -->
-        <button onclick="seleccionarVendedorLogin('Daniel')" class="p-4 bg-slate-800/90 hover:bg-slate-800 border-2 border-violet-500/40 hover:border-violet-500 rounded-2xl flex flex-col items-center gap-2 group active:scale-95 transition-all shadow-lg">
-          <div class="w-12 h-12 rounded-full bg-violet-600/20 border border-violet-500/50 flex items-center justify-center text-violet-400 font-black text-xl group-hover:scale-105 transition-all">
-            D
-          </div>
-          <div>
-            <div class="font-extrabold text-white text-sm">Daniel</div>
-            <div class="text-[10px] text-violet-300 font-medium">Vendedor</div>
-          </div>
-        </button>
-      </div>
-
-      <!-- Opción Consolidado -->
-      <button onclick="seleccionarVendedorLogin('Consolidado')" class="w-full py-2.5 px-3 bg-slate-800/60 hover:bg-slate-800 border border-slate-700/80 rounded-xl text-xs font-bold text-slate-300 flex items-center justify-center gap-2 active:scale-95 transition-all">
-        <i data-lucide="layers" class="w-4 h-4 text-amber-400"></i>
-        <span>Ver Todo Consolidado (Total)</span>
-      </button>
-
-      <button onclick="cerrarModalLoginVendedor()" id="btnCerrarLoginVendedor" class="hidden text-xs text-slate-500 hover:text-slate-400 pt-1">
-        Cerrar ventana
-      </button>
-    </div>
-  </div>
-
-  <!-- ============================================================== -->
-  <!-- MODAL: ALERTA DE INVENTARIO CRUZADO (CARLOS / DANIEL)          -->
-  <!-- ============================================================== -->
-  <div id="modalInventarioCruzado" class="fixed inset-0 z-50 bg-black/85 backdrop-blur-md hidden items-center justify-center p-4">
-    <div class="bg-slate-900 border border-amber-500/40 rounded-3xl max-w-sm w-full p-5 space-y-4 shadow-2xl shadow-amber-500/20 animate-pop-in">
-      <div class="flex items-center gap-3">
-        <div class="w-12 h-12 rounded-2xl bg-amber-500/20 border border-amber-500/40 flex items-center justify-center text-amber-400 shrink-0">
-          <i data-lucide="alert-triangle" class="w-6 h-6"></i>
-        </div>
-        <div>
-          <h3 class="text-sm font-black text-white uppercase tracking-wider">Disponibilidad de Inventario</h3>
-          <p class="text-[11px] text-amber-300 font-semibold" id="modalInvCruzadoSubtitulo">Inventario disponible con otro vendedor</p>
-        </div>
-      </div>
-
-      <div class="bg-slate-950/80 border border-slate-800 rounded-2xl p-3.5 space-y-2 text-xs">
-        <div class="flex items-center justify-between">
-          <span class="text-slate-400">Producto:</span>
-          <span id="modalInvCruzadoProducto" class="font-bold text-white text-right truncate max-w-[180px]">-</span>
-        </div>
-        <div class="flex items-center justify-between border-t border-slate-800/80 pt-2">
-          <span id="modalInvCruzadoLabelVendedorSin" class="text-slate-400">Stock Carlos:</span>
-          <span id="modalInvCruzadoStockSin" class="font-mono font-bold text-rose-400">0 unidades</span>
-        </div>
-        <div class="flex items-center justify-between border-t border-slate-800/80 pt-2">
-          <span id="modalInvCruzadoLabelVendedorCon" class="text-emerald-400 font-semibold">Stock Daniel:</span>
-          <span id="modalInvCruzadoStockCon" class="font-mono font-bold text-emerald-400">0 unidades</span>
-        </div>
-      </div>
-
-      <p id="modalInvCruzadoMensaje" class="text-xs text-slate-200 leading-relaxed bg-amber-950/30 border border-amber-500/30 rounded-xl p-3">
-        <!-- Texto dinámico: Daniel sí tiene inventario. ¿Quieres agregar este producto con el inventario de Daniel? -->
-      </p>
-
-      <div class="space-y-2 pt-1">
-        <button id="modalInvCruzadoBtnAceptar" class="w-full py-3 px-4 bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs rounded-2xl shadow-lg shadow-emerald-600/30 flex items-center justify-center gap-2 active:scale-95 transition-all">
-          <i data-lucide="check-circle" class="w-4 h-4"></i>
-          <span id="modalInvCruzadoBtnAceptarTexto">Sí, agregar con inventario de Daniel</span>
-        </button>
-
-        <button onclick="cerrarModalInventarioCruzado()" class="w-full py-2.5 px-4 bg-slate-800 hover:bg-slate-750 text-slate-300 font-semibold text-xs rounded-2xl border border-slate-700 active:scale-95 transition-all">
-          No, cancelar
-        </button>
-      </div>
-    </div>
-  </div>
-
-  <!-- ============================================================== -->
-  <!-- MODAL: REGISTRAR MOVIMIENTO DE DINERO                          -->
-  <!-- ============================================================== -->
-  <div id="modalMovimientoDinero" class="fixed inset-0 z-50 bg-black/85 backdrop-blur-md hidden items-center justify-center p-4">
-    <div class="bg-slate-900 border border-slate-800 rounded-3xl max-w-sm w-full p-5 space-y-4 shadow-2xl animate-pop-in">
-      <div class="flex items-center justify-between border-b border-slate-800 pb-3">
-        <h3 id="modalFinanzasTitulo" class="text-sm font-bold text-white flex items-center gap-2">
-          <i data-lucide="coins" class="w-4 h-4 text-emerald-400"></i>
-          <span>Movimiento de Dinero</span>
-        </h3>
-        <button onclick="cerrarModalMovimientoDinero()" class="p-1 text-slate-400 hover:text-white">
-          <i data-lucide="x" class="w-5 h-5"></i>
-        </button>
-      </div>
-
-      <form id="formMovimientoDinero" onsubmit="guardarMovimientoDinero(event)" class="space-y-3 text-xs">
-        <!-- Tipo de Transacción -->
-        <div>
-          <label class="block font-semibold text-slate-300 mb-1">Tipo de Transacción *</label>
-          <select id="finTipoMovimiento" onchange="actualizarCamposModalFinanzas()" class="w-full px-3 py-2.5 bg-slate-800 border border-slate-700 rounded-xl text-white font-bold text-xs focus:border-indigo-500">
-            <option value="aporte_capital">💰 Aporte / Inyección de Capital a Empresa</option>
-            <option value="pago_socio">💳 Pago / Reembolso de Deuda a Socio</option>
-            <option value="gasto_operativo">🧾 Gasto Operativo de Empresa</option>
-          </select>
-        </div>
-
-        <!-- Socio Involucrado -->
-        <div id="finGrupoSocio">
-          <label class="block font-semibold text-slate-300 mb-1">Socio Inversionista *</label>
-          <select id="finSocioSelect" class="w-full px-3 py-2.5 bg-slate-800 border border-slate-700 rounded-xl text-white font-bold text-xs focus:border-indigo-500">
-            <option value="Carlos">👤 Carlos</option>
-            <option value="Daniel">👤 Daniel</option>
-          </select>
-        </div>
-
-        <!-- Fecha -->
-        <div>
-          <label class="block font-semibold text-slate-300 mb-1">Fecha</label>
-          <input type="date" id="finFecha" class="w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded-xl text-white font-mono">
-        </div>
-
-        <!-- Montos USD y CRC -->
-        <div class="grid grid-cols-2 gap-2.5">
-          <div>
-            <label class="block font-semibold text-slate-300 mb-1">Monto en Colones (₡) *</label>
-            <input type="number" id="finMontoCRC" min="1" step="1" placeholder="₡0" oninput="autoConvertirFinanzas('CRC')" required class="w-full px-3 py-2.5 bg-slate-800 border border-emerald-500/40 rounded-xl text-white font-mono font-black text-sm focus:border-emerald-400">
-          </div>
-          <div>
-            <label class="block font-semibold text-slate-300 mb-1">Equivalente USD ($)</label>
-            <input type="number" id="finMontoUSD" min="0.01" step="0.01" placeholder="$0.00" oninput="autoConvertirFinanzas('USD')" class="w-full px-3 py-2.5 bg-slate-800 border border-slate-700 rounded-xl text-white font-mono font-bold text-sm focus:border-indigo-400">
-          </div>
-        </div>
-
-        <!-- Método de Pago -->
-        <div class="grid grid-cols-2 gap-2.5">
-          <div>
-            <label class="block font-semibold text-slate-300 mb-1">Método de Pago</label>
-            <select id="finMetodoPago" class="w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded-xl text-white">
-              <option value="SINPE Móvil">📱 SINPE Móvil</option>
-              <option value="Efectivo">💵 Efectivo</option>
-              <option value="Transferencia">🏦 Transferencia</option>
-            </select>
-          </div>
-          <div>
-            <label class="block font-semibold text-slate-300 mb-1">Tipo Cambio (₡)</label>
-            <input type="number" id="finTipoCambio" class="w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded-xl text-white font-mono" oninput="autoConvertirFinanzas('CRC')">
-          </div>
-        </div>
-
-        <!-- Notas / Referencia -->
-        <div>
-          <label class="block font-semibold text-slate-300 mb-1">Detalle / Referencia / Factura</label>
-          <input type="text" id="finNotas" placeholder="Ej. Aporte para insumos / Ref #98127" class="w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded-xl text-white">
-        </div>
-
-        <button type="submit" class="w-full py-3 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-2xl shadow-lg shadow-emerald-600/30 active:scale-95 transition-all flex items-center justify-center gap-2 mt-2 text-xs">
-          <i data-lucide="check" class="w-4 h-4"></i>
-          <span>Registrar Transacción</span>
-        </button>
-      </form>
-    </div>
-  </div>
-
-  <!-- ============================================================== -->
-  <!-- MODAL: REGISTRAR ABONO A CUENTA PENDIENTE                       -->
-  <!-- ============================================================== -->
-  <div id="modalAbonoCuenta" class="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm hidden items-end sm:items-center justify-center p-4">
-    <div class="bg-slate-900 border border-slate-700/80 rounded-3xl p-5 max-w-md w-full shadow-2xl space-y-4 max-h-[92vh] overflow-y-auto">
-      <div class="flex items-center justify-between border-b border-slate-800 pb-3">
-        <div class="flex items-center gap-2">
-          <div class="w-8 h-8 rounded-xl bg-emerald-600/20 text-emerald-400 flex items-center justify-center">
-            <i data-lucide="badge-dollar-sign" class="w-4 h-4"></i>
-          </div>
-          <div>
-            <h3 class="text-sm font-bold text-white">Registrar Abono</h3>
-            <p id="abonoEntidadNombre" class="text-xs text-slate-400 font-semibold truncate">Cliente</p>
-          </div>
-        </div>
-        <button type="button" onclick="cerrarModalAbonoCuenta()" class="p-1 rounded-lg text-slate-400 hover:text-white bg-slate-800">
-          <i data-lucide="x" class="w-5 h-5"></i>
-        </button>
-      </div>
-
-      <input type="hidden" id="abonoCuentaId">
-
-      <!-- Saldo Actual Card -->
-      <div class="bg-slate-950/80 border border-slate-800 rounded-2xl p-3.5 flex items-center justify-between font-mono">
-        <div>
-          <span class="text-[10px] text-slate-400 uppercase font-sans font-bold">Saldo Pendiente Actual</span>
-          <div id="abonoSaldoActualCRC" class="text-lg font-black text-amber-400">₡0</div>
-        </div>
-        <div class="text-right">
-          <span class="text-[10px] text-slate-500 uppercase font-sans font-bold">Referencia</span>
-          <div id="abonoSaldoActualUSD" class="text-xs font-bold text-slate-400">$0.00 USD</div>
-        </div>
-      </div>
-
-      <!-- Monto del Abono Dual Currency -->
-      <div class="space-y-2">
-        <label class="block text-xs font-semibold text-slate-300">Monto del Abono *</label>
-        <div class="grid grid-cols-2 gap-3">
-          <div>
-            <span class="text-[10px] text-slate-400 font-mono mb-1 block">Colones (₡)</span>
-            <input type="number" id="abonoMontoCRC" min="1" step="1" placeholder="₡0" oninput="autoConvertirAbono('CRC')"
-              class="w-full px-3 py-2.5 bg-slate-800 border border-slate-700 rounded-xl text-white font-mono font-bold text-sm focus:border-emerald-500">
-          </div>
-          <div>
-            <span class="text-[10px] text-slate-400 font-mono mb-1 block">Dólares ($)</span>
-            <input type="number" id="abonoMontoUSD" min="0.01" step="0.01" placeholder="$0.00" oninput="autoConvertirAbono('USD')"
-              class="w-full px-3 py-2.5 bg-slate-800 border border-slate-700 rounded-xl text-white font-mono font-bold text-sm focus:border-emerald-500">
-          </div>
-        </div>
-      </div>
-
-      <!-- Quick Button Liquidar Total -->
-      <button type="button" onclick="llenarAbonoTotal()" class="w-full py-2 bg-slate-800 hover:bg-slate-750 border border-emerald-500/40 text-emerald-300 rounded-xl text-xs font-bold active:scale-95 transition-all flex items-center justify-center gap-1.5">
-        <i data-lucide="check-check" class="w-3.5 h-3.5"></i>
-        <span>Liquidar saldo completo</span>
-      </button>
-
-      <!-- Método y Nota -->
-      <div class="space-y-3">
-        <div>
-          <label class="block text-xs font-semibold text-slate-300 mb-1">Método de Pago</label>
-          <select id="abonoMetodoPago" class="w-full px-3 py-2.5 bg-slate-800 border border-slate-700 rounded-xl text-white text-xs">
-            <option value="Efectivo">💵 Efectivo</option>
-            <option value="SINPE Móvil">📱 SINPE Móvil</option>
-            <option value="Transferencia">🏦 Transferencia Bancaria</option>
-            <option value="Tarjeta">💳 Tarjeta</option>
-          </select>
-        </div>
-        <div>
-          <label class="block text-xs font-semibold text-slate-300 mb-1">Nota / Detalle (Opcional)</label>
-          <input type="text" id="abonoNota" placeholder="Ej. Abono parcial por SINPE ref #1234" class="w-full px-3 py-2.5 bg-slate-800 border border-slate-700 rounded-xl text-white text-xs">
-        </div>
-      </div>
-
-      <button type="button" onclick="guardarAbonoCuenta()" class="w-full py-3.5 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-bold rounded-2xl shadow-lg shadow-emerald-600/30 active:scale-95 transition-all flex items-center justify-center gap-2 text-sm">
-        <i data-lucide="check" class="w-4 h-4"></i>
-        <span>Aplicar y Guardar Abono</span>
-      </button>
-    </div>
-  </div>
-
-  <!-- ============================================================== -->
-  <!-- MODAL: NUEVA CUENTA PENDIENTE MANUAL                           -->
-  <!-- ============================================================== -->
-  <div id="modalNuevaCuenta" class="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm hidden items-end sm:items-center justify-center p-4">
-    <div class="bg-slate-900 border border-slate-700/80 rounded-3xl p-5 max-w-md w-full shadow-2xl space-y-4 max-h-[92vh] overflow-y-auto">
-      <div class="flex items-center justify-between border-b border-slate-800 pb-3">
-        <h3 class="text-sm font-bold text-white flex items-center gap-2">
-          <i data-lucide="plus-circle" class="w-4 h-4 text-rose-400"></i>
-          <span>Nueva Cuenta Pendiente</span>
-        </h3>
-        <button type="button" onclick="cerrarModalNuevaCuenta()" class="p-1 rounded-lg text-slate-400 hover:text-white bg-slate-800">
-          <i data-lucide="x" class="w-5 h-5"></i>
-        </button>
-      </div>
-
-      <div class="space-y-3 text-xs">
-        <!-- Tipo de Cuenta -->
-        <div>
-          <label class="block font-semibold text-slate-300 mb-1">Tipo de Cuenta *</label>
-          <div class="grid grid-cols-2 gap-2 font-bold font-mono">
-            <button type="button" id="btnTipoCtaCobrar" onclick="setTipoNuevaCuenta('Por Cobrar')" class="py-2.5 rounded-xl bg-emerald-600 text-white text-center border border-transparent">
-              Por Cobrar (Cliente)
-            </button>
-            <button type="button" id="btnTipoCtaPagar" onclick="setTipoNuevaCuenta('Por Pagar')" class="py-2.5 rounded-xl bg-slate-800 text-slate-400 text-center border border-slate-700">
-              Por Pagar (Proveedor)
-            </button>
-          </div>
-          <input type="hidden" id="nuevaCtaTipo" value="Por Cobrar">
-        </div>
-
-        <!-- Nombre / Entidad -->
-        <div>
-          <label id="lblNuevaCtaEntidad" class="block font-semibold text-slate-300 mb-1">Nombre del Cliente *</label>
-          <input type="text" id="nuevaCtaEntidad" placeholder="Ej. Juan Pérez" class="w-full px-3 py-2.5 bg-slate-800 border border-slate-700 rounded-xl text-white">
-        </div>
-
-        <!-- Teléfono -->
-        <div>
-          <label class="block font-semibold text-slate-300 mb-1">Teléfono (Opcional)</label>
-          <input type="text" id="nuevaCtaTelefono" placeholder="Ej. 8888-8888" class="w-full px-3 py-2.5 bg-slate-800 border border-slate-700 rounded-xl text-white">
-        </div>
-
-        <!-- Monto Dual Currency -->
-        <div class="grid grid-cols-2 gap-2">
-          <div>
-            <label class="block font-semibold text-slate-300 mb-1">Monto en Colones (₡) *</label>
-            <input type="number" id="nuevaCtaMontoCRC" min="1" placeholder="₡0" oninput="autoConvertirNuevaCta('CRC')" class="w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded-xl text-white font-mono font-bold">
-          </div>
-          <div>
-            <label class="block font-semibold text-slate-300 mb-1">Monto en Dólares ($)</label>
-            <input type="number" id="nuevaCtaMontoUSD" min="0.01" step="0.01" placeholder="$0.00" oninput="autoConvertirNuevaCta('USD')" class="w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded-xl text-white font-mono font-bold">
-          </div>
-        </div>
-
-        <!-- Vencimiento y Notas -->
-        <div class="grid grid-cols-2 gap-2">
-          <div>
-            <label class="block font-semibold text-slate-300 mb-1">Fecha Promesa / Límite</label>
-            <input type="date" id="nuevaCtaVencimiento" class="w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded-xl text-white font-mono">
-          </div>
-          <div>
-            <label class="block font-semibold text-slate-300 mb-1">Vendedor</label>
-            <select id="nuevaCtaVendedor" class="w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded-xl text-white">
-              <option value="Carlos">Carlos</option>
-              <option value="Daniel">Daniel</option>
-            </select>
-          </div>
-        </div>
-
-        <div>
-          <label class="block font-semibold text-slate-300 mb-1">Detalle / Notas / Factura</label>
-          <input type="text" id="nuevaCtaNotas" placeholder="Ej. Factura #108 o 2 botellas de whisky" class="w-full px-3 py-2.5 bg-slate-800 border border-slate-700 rounded-xl text-white">
-        </div>
-
-        <button type="button" onclick="guardarNuevaCuentaManual()" class="w-full py-3.5 bg-gradient-to-r from-rose-600 to-amber-600 hover:from-rose-500 hover:to-amber-500 text-white font-bold rounded-2xl shadow-lg shadow-rose-600/30 active:scale-95 transition-all flex items-center justify-center gap-2 mt-2 text-sm">
-          <i data-lucide="check" class="w-4 h-4"></i>
-          <span>Guardar Cuenta Pendiente</span>
-        </button>
-      </div>
-    </div>
-  </div>
-
-
-  <!-- ============================================================== -->
-  <!-- MODAL: LIQUIDAR COMISIÓN A PREVENTISTA                         -->
-  <!-- ============================================================== -->
-  <div id="modalLiquidacionComision" class="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm hidden items-end sm:items-center justify-center p-0 sm:p-4">
-    <div class="bg-slate-900 border border-emerald-500/40 rounded-t-3xl sm:rounded-3xl max-w-md w-full p-5 space-y-4 max-h-[90vh] overflow-y-auto animate-slide-up shadow-2xl">
-      <div class="flex items-center justify-between border-b border-slate-800 pb-3">
-        <div class="flex items-center gap-2">
-          <div class="p-2 rounded-xl bg-emerald-500/20 text-emerald-400">
-            <i data-lucide="badge-dollar-sign" class="w-5 h-5"></i>
-          </div>
-          <div>
-            <h3 class="text-sm font-bold text-white uppercase tracking-wider">Liquidar Comisiones</h3>
-            <span class="text-[10px] text-emerald-400 font-mono" id="modalLiqPreventaNombre">Vendedor</span>
-          </div>
-        </div>
-        <button type="button" onclick="cerrarModalLiquidacion()" class="text-slate-400 hover:text-white text-lg font-bold p-1">✕</button>
-      </div>
-
-      <!-- Balance Actual del Preventista -->
-      <div class="p-3 bg-slate-950 rounded-2xl border border-slate-800 font-mono space-y-1">
-        <div class="flex items-center justify-between text-xs">
-          <span class="text-slate-400 font-sans">Saldo Pendiente Actual:</span>
-          <span class="font-black text-amber-400 text-sm" id="modalLiqSaldoPendienteCRC">₡0</span>
-        </div>
-        <div class="flex items-center justify-between text-[11px] text-slate-500">
-          <span class="font-sans">Equivalente USD:</span>
-          <span id="modalLiqSaldoPendienteUSD">$0.00 USD</span>
-        </div>
-      </div>
-
-      <!-- Formulario de Liquidación -->
-      <form onsubmit="guardarLiquidacionModal(event)" class="space-y-3 text-xs">
-        <input type="hidden" id="modalLiqPreventaInput">
-
-        <!-- Monto a Liquidar (CRC y USD) -->
-        <div class="grid grid-cols-2 gap-2.5">
-          <div>
-            <label class="block font-semibold text-slate-300 mb-1">Monto a Pagar (CRC ₡) *</label>
-            <input type="number" id="modalLiqMontoCRC" min="1" step="1" required oninput="autoConvertirModalLiq('CRC')"
-              class="w-full px-3 py-2.5 bg-slate-800 border border-emerald-500/40 rounded-xl text-white font-mono font-black focus:outline-none focus:border-emerald-400">
-          </div>
-          <div>
-            <label class="block font-semibold text-slate-300 mb-1">Equivalente (USD $) *</label>
-            <input type="number" id="modalLiqMontoUSD" min="0.01" step="0.01" required oninput="autoConvertirModalLiq('USD')"
-              class="w-full px-3 py-2.5 bg-slate-800 border border-slate-700 rounded-xl text-white font-mono font-bold focus:outline-none focus:border-emerald-400">
-          </div>
-        </div>
-
-        <!-- Botones de atajo: Liquidar Todo -->
-        <div class="flex gap-2">
-          <button type="button" onclick="setMontoLiqTotal()" class="flex-1 py-1.5 bg-slate-800 hover:bg-slate-700 text-amber-300 rounded-xl font-bold text-[10px] border border-amber-500/30 active:scale-95 transition-all">
-            ⚡ Pagar Saldo Total
-          </button>
-        </div>
-
-        <!-- Quién Liquida y Método de Pago -->
-        <div class="grid grid-cols-2 gap-2.5">
-          <div>
-            <label class="block font-semibold text-slate-300 mb-1">¿Quién liquida? *</label>
-            <select id="modalLiqResponsable" class="w-full px-3 py-2.5 bg-slate-800 border border-slate-700 rounded-xl text-white font-bold">
-              <option value="Carlos">👤 Carlos</option>
-              <option value="Daniel">👤 Daniel</option>
-            </select>
-          </div>
-          <div>
-            <label class="block font-semibold text-slate-300 mb-1">Método de Pago *</label>
-            <select id="modalLiqMetodo" class="w-full px-3 py-2.5 bg-slate-800 border border-slate-700 rounded-xl text-white font-bold">
-              <option value="SINPE">📱 SINPE Móvil</option>
-              <option value="Efectivo">💵 Efectivo</option>
-              <option value="Transferencia">🏦 Transferencia</option>
-            </select>
-          </div>
-        </div>
-
-        <!-- Registrar egreso en Finanzas -->
-        <div class="p-3 bg-slate-950/80 border border-slate-800 rounded-2xl flex items-center justify-between gap-2">
-          <div class="flex items-center gap-2 min-w-0">
-            <input type="checkbox" id="modalLiqCheckFinanzas" checked class="w-4 h-4 rounded text-emerald-600 focus:ring-emerald-500 bg-slate-800 border-slate-700">
-            <label for="modalLiqCheckFinanzas" class="text-[11px] text-slate-300 cursor-pointer">
-              <b>Registrar egreso en Finanzas</b>
-              <span class="block text-[10px] text-slate-500">Caja Chica • Gasto de Comisiones</span>
-            </label>
-          </div>
-          <i data-lucide="wallet" class="w-4 h-4 text-emerald-400 shrink-0"></i>
-        </div>
-
-        <!-- Referencia / Notas -->
-        <div>
-          <label class="block font-semibold text-slate-300 mb-1">Referencia / Comprobante / Notas</label>
-          <input type="text" id="modalLiqNotas" placeholder="Ej: SINPE #948291 semana 36" 
-            class="w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded-xl text-white placeholder-slate-500 text-xs">
-        </div>
-
-        <!-- Botón Confirmar -->
-        <button type="submit" class="w-full py-3.5 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-black text-xs uppercase tracking-wider rounded-2xl shadow-lg shadow-emerald-600/30 active:scale-95 transition-all flex items-center justify-center gap-2 mt-2">
-          <i data-lucide="check-circle" class="w-4 h-4"></i>
-          <span>Confirmar Liquidación</span>
-        </button>
-      </form>
-    </div>
-  </div>
-
-
-  <!-- ============================================================== -->
-  <!-- BOTTOM NAVIGATION BAR: PRIORIDADES DE OPERACIÓN                -->
-  <!-- ============================================================== -->
-  <nav class="fixed bottom-0 left-0 right-0 z-40 bg-slate-900/95 backdrop-blur-lg border-t border-slate-800/80 px-1 py-1.5">
-    <div class="max-w-md mx-auto grid grid-cols-5 gap-1 text-[10px] font-bold text-slate-400">
-      
-      <!-- Tab 1: Dashboard -->
-      <button onclick="cambiarVista('dashboard')" id="navTab-dashboard" class="nav-item active flex flex-col items-center justify-center py-1.5 rounded-xl transition-all">
-        <i data-lucide="layout-dashboard" class="w-4 h-4 mb-0.5"></i>
-        <span>Resumen</span>
-      </button>
-
-      <!-- Tab 2: Productos -->
-      <button onclick="cambiarVista('inventario')" id="navTab-inventario" class="nav-item flex flex-col items-center justify-center py-1.5 rounded-xl transition-all">
+  <!-- BOTTOM NAVIGATION BAR -->
+  <nav class="fixed bottom-0 left-0 right-0 z-40 bg-slate-900/95 backdrop-blur-md border-t border-slate-800/90 max-w-md mx-auto px-2 py-2">
+    <div class="grid grid-cols-5 gap-0.5 text-[10px] font-bold font-mono">
+      <button onclick="cambiarVista('productos')" id="navTab-productos" class="nav-item active flex flex-col items-center justify-center py-1.5 rounded-xl transition-all">
         <i data-lucide="wine" class="w-4 h-4 mb-0.5"></i>
-        <span>Licores</span>
+        <span>Catálogo</span>
       </button>
 
-      <!-- Tab 3: Ventas (Main center button) -->
-      <button onclick="cambiarVista('ventas')" id="navTab-ventas" class="nav-item flex flex-col items-center justify-center py-1.5 rounded-xl transition-all text-indigo-400">
-        <div class="w-7 h-7 rounded-full bg-indigo-600 text-white flex items-center justify-center -mt-2 shadow-md shadow-indigo-500/30">
-          <i data-lucide="shopping-cart" class="w-3.5 h-3.5"></i>
-        </div>
-        <span class="mt-0.5">Vender</span>
+      <button onclick="cambiarVista('pedidos')" id="navTab-pedidos" class="nav-item flex flex-col items-center justify-center py-1.5 rounded-xl transition-all relative">
+        <i data-lucide="shopping-bag" class="w-4 h-4 mb-0.5"></i>
+        <span>Pedidos</span>
+        <span id="navPedidosBadge" class="hidden absolute top-1 right-2 w-2 h-2 rounded-full bg-amber-400 animate-pulse"></span>
       </button>
 
-      <!-- Tab 4: Clientes -->
+      <button onclick="cambiarVista('facturas')" id="navTab-facturas" class="nav-item flex flex-col items-center justify-center py-1.5 rounded-xl transition-all">
+        <i data-lucide="receipt" class="w-4 h-4 mb-0.5"></i>
+        <span>Facturas</span>
+      </button>
+
+      <button onclick="cambiarVista('comision')" id="navTab-comision" class="nav-item flex flex-col items-center justify-center py-1.5 rounded-xl transition-all">
+        <i data-lucide="badge-percent" class="w-4 h-4 mb-0.5"></i>
+        <span>Comisión</span>
+      </button>
+
       <button onclick="cambiarVista('clientes')" id="navTab-clientes" class="nav-item flex flex-col items-center justify-center py-1.5 rounded-xl transition-all">
         <i data-lucide="users" class="w-4 h-4 mb-0.5"></i>
         <span>Clientes</span>
       </button>
-
-      <!-- Accesos secundarios reunidos para que las acciones diarias respiren -->
-      <button onclick="abrirMenuMas()" id="navTab-mas" class="nav-item flex flex-col items-center justify-center py-1.5 rounded-xl transition-all">
-        <i data-lucide="more-horizontal" class="w-5 h-5 mb-0.5"></i>
-        <span>Más</span>
-      </button>
-
     </div>
   </nav>
 
-  <!-- MENÚ SECUNDARIO: mantiene disponibles los módulos menos frecuentes -->
-  <div id="modalMenuMas" class="fixed inset-0 z-50 bg-slate-950/70 backdrop-blur-sm hidden items-end" onclick="if(event.target === this) cerrarMenuMas()">
-    <div class="w-full max-w-md mx-auto bg-slate-900 border-t border-slate-700 rounded-t-3xl p-5 pb-8 shadow-2xl animate-slide-up">
-      <div class="flex items-center justify-between mb-4">
-        <div>
-          <p class="text-xs font-black text-white uppercase tracking-wider">Gestión y seguimiento</p>
-          <p class="text-[11px] text-slate-400 mt-0.5">Accesos que normalmente no necesitas para cada venta</p>
+  <!-- MODAL: VENDEDOR -->
+  <div id="modalVendedor" class="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm hidden items-center justify-center p-4">
+    <div class="bg-slate-900 border border-amber-500/40 rounded-3xl p-5 w-full max-w-sm space-y-4 shadow-2xl">
+      <div class="flex items-center justify-between border-b border-slate-800 pb-2.5">
+        <div class="flex items-center gap-2">
+          <i data-lucide="user-check" class="w-5 h-5 text-amber-400"></i>
+          <h3 class="text-sm font-bold text-white uppercase tracking-wider">Identificación de Vendedor</h3>
         </div>
-        <button onclick="cerrarMenuMas()" aria-label="Cerrar menú" class="p-2 rounded-xl bg-slate-800 text-slate-300"><i data-lucide="x" class="w-5 h-5"></i></button>
+        <button onclick="cerrarModalVendedor()" id="btnCerrarModalVendedor" class="text-slate-400 hover:text-white text-sm font-bold">✕</button>
       </div>
-      <div class="grid grid-cols-2 gap-2.5">
-        <button onclick="irDesdeMenuMas('compras')" class="p-3 rounded-2xl bg-slate-800 border border-slate-700 text-left active:scale-95"><i data-lucide="truck" class="w-5 h-5 text-amber-400 mb-2"></i><span class="block text-xs font-bold text-white">Compras</span><span class="text-[10px] text-slate-400">Entradas de inventario</span></button>
-        <button onclick="irDesdeMenuMas('cuentas')" class="p-3 rounded-2xl bg-slate-800 border border-slate-700 text-left active:scale-95"><i data-lucide="badge-dollar-sign" class="w-5 h-5 text-rose-400 mb-2"></i><span class="block text-xs font-bold text-white">Cuentas</span><span class="text-[10px] text-slate-400">Cobros y pagos</span></button>
-        <button onclick="irDesdeMenuMas('comisiones')" class="p-3 rounded-2xl bg-slate-800 border border-slate-700 text-left active:scale-95"><i data-lucide="badge-percent" class="w-5 h-5 text-emerald-400 mb-2"></i><span class="block text-xs font-bold text-white">Comisiones</span><span class="text-[10px] text-slate-400">Liquidaciones</span></button>
-        <button onclick="irDesdeMenuMas('finanzas')" class="p-3 rounded-2xl bg-slate-800 border border-slate-700 text-left active:scale-95"><i data-lucide="wallet" class="w-5 h-5 text-indigo-400 mb-2"></i><span class="block text-xs font-bold text-white">Finanzas</span><span class="text-[10px] text-slate-400">Caja y socios</span></button>
-        <button onclick="irDesdeMenuMas('configuracion')" class="col-span-2 p-3 rounded-2xl bg-slate-800 border border-slate-700 text-left active:scale-95 flex items-center gap-3"><i data-lucide="settings" class="w-5 h-5 text-slate-300"></i><span><span class="block text-xs font-bold text-white">Configuración y respaldo</span><span class="text-[10px] text-slate-400">Sincronización, exportación y ajustes</span></span></button>
+
+      <p class="text-xs text-slate-300 leading-relaxed">
+        Ingresa tu nombre o código de colaborador. Los clientes y pedidos que crees quedarán registrados bajo tu cuenta en el sistema central.
+      </p>
+
+      <div class="space-y-1">
+        <label class="block text-xs font-semibold text-slate-400">Nombre de Vendedor / Colaborador *</label>
+        <input type="text" id="inputNombreVendedor" placeholder="Ej: Vendedor Norte / María" 
+          class="w-full px-3 py-2.5 bg-slate-950 border border-slate-700 rounded-xl text-sm text-white focus:outline-none focus:border-amber-500">
+      </div>
+
+      <button onclick="guardarNombreVendedor()" class="w-full py-3 bg-amber-500 hover:bg-amber-400 text-slate-950 font-black rounded-xl text-xs uppercase tracking-wider active:scale-95 transition-all shadow-md">
+        Guardar y Continuar
+      </button>
+    </div>
+  </div>
+
+  <!-- MODAL: CLIENTE -->
+  <div id="modalCliente" class="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm hidden items-center justify-center p-4">
+    <div class="bg-slate-900 border border-amber-500/40 rounded-3xl p-5 w-full max-w-sm space-y-4 shadow-2xl">
+      <div class="flex items-center justify-between border-b border-slate-800 pb-2.5">
+        <div class="flex items-center gap-2">
+          <i data-lucide="user-plus" class="w-5 h-5 text-amber-400"></i>
+          <h3 class="text-sm font-bold text-white uppercase tracking-wider" id="modalClienteTitulo">Nuevo Cliente</h3>
+        </div>
+        <button onclick="cerrarModalCliente()" class="text-slate-400 hover:text-white text-sm font-bold">✕</button>
+      </div>
+
+      <input type="hidden" id="modalClienteId">
+
+      <div class="space-y-3 text-xs">
+        <div>
+          <label class="block font-semibold text-slate-300 mb-1">Nombre Completo *</label>
+          <input type="text" id="modalClienteNombre" placeholder="Ej. Juan Pérez" 
+            class="w-full px-3 py-2.5 bg-slate-950 border border-slate-700 rounded-xl text-white text-xs focus:outline-none focus:border-amber-500">
+        </div>
+
+        <div>
+          <label class="block font-semibold text-slate-300 mb-1">Teléfono (WhatsApp) *</label>
+          <input type="tel" id="modalClienteTelefono" placeholder="Ej. 8888-8888" 
+            class="w-full px-3 py-2.5 bg-slate-950 border border-slate-700 rounded-xl text-white font-mono text-xs focus:outline-none focus:border-amber-500">
+        </div>
+      </div>
+
+      <div class="pt-2 flex items-center gap-2">
+        <button onclick="cerrarModalCliente()" class="flex-1 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold rounded-xl text-xs active:scale-95 transition-all">
+          Cancelar
+        </button>
+        <button onclick="guardarClienteForm()" class="flex-1 py-2.5 bg-amber-500 hover:bg-amber-400 text-slate-950 font-black rounded-xl text-xs active:scale-95 transition-all shadow-md">
+          Guardar Cliente
+        </button>
       </div>
     </div>
   </div>
 
-  <!-- OVERLAY DE BLOQUEO DE PANTALLA DURANTE SINCRONIZACIÓN -->
+  <!-- MODAL: CONFIGURACIÓN SHEETS -->
+  <div id="modalConfig" class="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm hidden items-center justify-center p-4">
+    <div class="bg-slate-900 border border-amber-500/40 rounded-3xl p-5 w-full max-w-sm space-y-4 shadow-2xl">
+      <div class="flex items-center justify-between border-b border-slate-800 pb-2.5">
+        <div class="flex items-center gap-2">
+          <i data-lucide="link-2" class="w-5 h-5 text-amber-400"></i>
+          <h3 class="text-sm font-bold text-white uppercase tracking-wider">Conexión con Sheets</h3>
+        </div>
+        <button onclick="cerrarModalConfig()" class="text-slate-400 hover:text-white text-sm font-bold">✕</button>
+      </div>
+
+      <p class="text-xs text-slate-300 leading-relaxed">
+        Enlace de la Web App de Google Apps Script para sincronizar catálogo, pedidos y clientes.
+      </p>
+
+      <div class="space-y-3 text-xs">
+        <div>
+          <label class="block font-semibold text-slate-400 mb-1">URL de Google Apps Script</label>
+          <input type="text" id="configSheetsUrl" placeholder="https://script.google.com/macros/s/.../exec" 
+            class="w-full px-3 py-2 bg-slate-950 border border-slate-700 rounded-xl text-white font-mono text-[11px] focus:outline-none focus:border-amber-500">
+        </div>
+
+        <div>
+          <label class="block font-semibold text-slate-400 mb-1">Tipo de Cambio de Referencia (₡)</label>
+          <input type="number" id="configTipoCambio" value="520" 
+            class="w-full px-3 py-2 bg-slate-950 border border-slate-700 rounded-xl text-white font-mono text-xs focus:outline-none focus:border-amber-500">
+        </div>
+      </div>
+
+      <div class="space-y-2 pt-1 border-t border-slate-800">
+        <button onclick="guardarConfiguracionForm()" class="w-full py-3 bg-amber-500 hover:bg-amber-400 text-slate-950 font-black rounded-xl text-xs uppercase tracking-wider active:scale-95 transition-all shadow-md">
+          Guardar Configuración
+        </button>
+
+        <!-- Botón Especial: Vaciar Caché y Actualizar App -->
+        <button onclick="forzarActualizacionApp()" class="w-full py-2.5 bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white font-bold rounded-xl shadow-lg shadow-cyan-600/25 active:scale-95 transition-all flex items-center justify-center gap-2 text-xs">
+          <i data-lucide="refresh-cw" class="w-4 h-4"></i>
+          <span>Vaciar Caché y Actualizar App</span>
+        </button>
+        <p class="text-[10px] text-slate-400 leading-tight text-center">
+          💡 Úsalo si no ves los últimos cambios o botones nuevos. Elimina archivos guardados en caché y recarga la versión más reciente.
+        </p>
+
+        <!-- Botón Borrar Local -->
+        <button onclick="limpiarCacheLocal()" class="w-full py-2 bg-rose-950/40 hover:bg-rose-900/50 border border-rose-800/50 text-rose-300 rounded-xl font-semibold active:scale-95 transition-all flex items-center justify-center gap-1.5 text-xs">
+          <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+          <span>Borrar Datos Locales y Recargar</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: Ver Foto Completa / Lightbox de Producto -->
+  <div id="modalFotoCompleta" class="fixed inset-0 z-50 bg-slate-950/90 backdrop-blur-md hidden flex flex-col items-center justify-center p-4 transition-all duration-300 opacity-0 pointer-events-none">
+    <div class="relative max-w-sm w-full bg-slate-900 border border-slate-800 rounded-3xl p-4 shadow-2xl flex flex-col items-center overflow-hidden">
+      <!-- Botón Cerrar -->
+      <button onclick="cerrarFotoCompleta()" class="absolute top-3 right-3 z-10 w-9 h-9 rounded-full bg-slate-800/90 text-slate-300 hover:text-white hover:bg-slate-700 flex items-center justify-center text-sm shadow-md transition-all active:scale-90">
+        ✕
+      </button>
+      
+      <!-- Título de Producto -->
+      <h3 id="modalFotoTitulo" class="text-sm font-bold text-white text-center mb-3 pr-8 pl-2 line-clamp-2 leading-tight">
+        Producto
+      </h3>
+
+      <!-- Contenedor Imagen -->
+      <div class="w-full h-80 sm:h-96 rounded-2xl bg-slate-950/70 border border-slate-800 flex items-center justify-center p-2 overflow-hidden">
+        <img id="modalFotoImg" src="" alt="Foto de Producto" class="max-w-full max-h-full object-contain rounded-xl drop-shadow-lg transition-transform duration-300 hover:scale-105">
+      </div>
+
+      <div class="mt-3 text-center">
+        <span class="text-[11px] text-slate-400 font-medium">Toque fuera o presione ✕ para cerrar</span>
+      </div>
+    </div>
+  </div>  <!-- OVERLAY DE BLOQUEO DE PANTALLA DURANTE SINCRONIZACIÓN -->
   <div id="syncBlockingOverlay" class="fixed inset-0 z-[9999] bg-slate-950/85 backdrop-blur-md hidden flex-col items-center justify-center p-6 select-none transition-all duration-300">
-    <div class="max-w-sm w-full bg-slate-900 border border-emerald-500/40 rounded-3xl p-6 shadow-2xl text-center space-y-4">
+    <div class="max-w-sm w-full bg-slate-900 border border-amber-500/40 rounded-3xl p-6 shadow-2xl text-center space-y-4">
       <div class="relative w-16 h-16 mx-auto flex items-center justify-center">
-        <div class="absolute inset-0 rounded-full border-4 border-emerald-500/20"></div>
-        <div class="absolute inset-0 rounded-full border-4 border-emerald-400 border-t-transparent animate-spin"></div>
-        <i data-lucide="cloud-sync" class="w-7 h-7 text-emerald-400"></i>
+        <div class="absolute inset-0 rounded-full border-4 border-amber-500/20"></div>
+        <div class="absolute inset-0 rounded-full border-4 border-amber-400 border-t-transparent animate-spin"></div>
+        <i data-lucide="cloud-sync" class="w-7 h-7 text-amber-400"></i>
       </div>
       <div>
         <h3 class="text-base font-black text-white tracking-wide">Sincronizando con Google Sheets</h3>
         <p class="text-xs text-slate-400 mt-1">Por favor espera un momento, no cierres la aplicación...</p>
       </div>
       <div class="px-4 py-2.5 bg-slate-950/80 border border-slate-800 rounded-2xl">
-        <p id="syncBlockingOverlayStatus" class="text-xs font-bold text-emerald-300 font-mono">Preparando envío...</p>
+        <p id="syncBlockingOverlayStatus" class="text-xs font-bold text-amber-300 font-mono">Preparando sincronización...</p>
       </div>
       <p class="text-[11px] text-slate-500">La pantalla se desbloqueará automáticamente al terminar.</p>
     </div>
   </div>
 
-  <!-- Application Logic -->
-  <script src="app.js?v=20260920_04"></script>
+  <script src="app.js?v=20260913_03"></script>
 </body>
 </html>
