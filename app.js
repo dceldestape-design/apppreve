@@ -6131,13 +6131,45 @@ async function _descargarDatosSheets(mostrarMensaje = false) {
         const cuentasSheets = Array.isArray(json.data.cuentas) ? json.data.cuentas : [];
         const cuentasLocalesMap = new Map((state.cuentas || []).map(c => [c.id, c]));
         
-        // Preservar metadatos locales de envío y ventaId si Sheets aún no los envía
+        // Cuentas con abonos o liquidaciones pendientes en la cola local
+        const abonosPendientesCola = new Map();
+        (state.colaSincronizacion || []).forEach(q => {
+          if (q.accion === "abonarCuenta" && q.datos && q.datos.id) {
+            abonosPendientesCola.set(String(q.datos.id).toLowerCase(), q.datos);
+          }
+        });
+
+        // Preservar metadatos locales y estado de liquidación reciente
         cuentasSheets.forEach(c => {
-          const loc = cuentasLocalesMap.get(c.id);
+          const loc = cuentasLocalesMap.get(c.id) || Array.from(cuentasLocalesMap.values()).find(l => l.referenciaId && l.referenciaId === c.referenciaId);
           if (loc) {
             if (!c.costoEnvioCRC && loc.costoEnvioCRC) c.costoEnvioCRC = loc.costoEnvioCRC;
             if (!c.costoEnvioUSD && loc.costoEnvioUSD) c.costoEnvioUSD = loc.costoEnvioUSD;
             if (!c.ventaId && loc.ventaId) c.ventaId = loc.ventaId;
+
+            // Si localmente ya estaba liquidada o tiene un abono pendiente en cola
+            const tieneAbonoEnCola = abonosPendientesCola.has(String(c.id).toLowerCase()) || (c.referenciaId && abonosPendientesCola.has(String(c.referenciaId).toLowerCase()));
+            if (loc.estado === "Pagado" || Number(loc.saldoPendienteCRC || 0) <= 0 || tieneAbonoEnCola) {
+              if (loc.estado === "Pagado" || Number(loc.saldoPendienteCRC || 0) <= 0) {
+                c.estado = "Pagado";
+                c.saldoPendienteCRC = 0;
+                c.saldoPendienteUSD = 0;
+              } else if (loc.saldoPendienteCRC !== undefined) {
+                c.saldoPendienteCRC = loc.saldoPendienteCRC;
+                c.saldoPendienteUSD = loc.saldoPendienteUSD;
+                c.estado = loc.estado;
+              }
+              if (loc.notas && !c.notas.includes(loc.notas)) {
+                c.notas = loc.notas;
+              }
+            }
+          }
+
+          // Normalizar estado
+          if (Number(c.saldoPendienteCRC || 0) <= 0 || String(c.estado || "").toLowerCase() === "pagado") {
+            c.estado = "Pagado";
+            c.saldoPendienteCRC = 0;
+            c.saldoPendienteUSD = 0;
           }
         });
 
@@ -6145,7 +6177,11 @@ async function _descargarDatosSheets(mostrarMensaje = false) {
         const cuentasSoloLocales = (state.cuentas || []).filter(c =>
           c && (c.id || c.referenciaId) &&
           !idsCuentasSheets.has(c.id) && !idsCuentasSheets.has(c.referenciaId) &&
-          (state.colaSincronizacion || []).some(q => q.datos && q.datos.cuenta && (q.datos.cuenta.id === c.id || q.datos.cuenta.referenciaId === c.referenciaId))
+          (state.colaSincronizacion || []).some(q => {
+            const cId = q.datos && (q.datos.id || (q.datos.cuenta && q.datos.cuenta.id));
+            const cRef = q.datos && (q.datos.referenciaId || (q.datos.cuenta && q.datos.cuenta.referenciaId));
+            return (cId === c.id || cRef === c.referenciaId || cId === c.referenciaId);
+          })
         );
         state.cuentas = [...cuentasSheets, ...cuentasSoloLocales];
         guardarCuentasLocal();
