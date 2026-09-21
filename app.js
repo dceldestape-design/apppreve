@@ -6208,7 +6208,8 @@ async function _descargarDatosSheets(mostrarMensaje = false) {
       }
     } else {
       console.warn("[SYNC] Respuesta inesperada:", json);
-      if (mostrarMensaje) mostrarToast("Error: Sheets no devolvió datos válidos.", "error");
+      const detalleError = json && json.error ? ` (${json.error})` : "";
+      if (mostrarMensaje) mostrarToast("Error: Sheets no devolvió datos válidos" + detalleError + ".", "error");
     }
   } catch (err) {
     console.error("[SYNC] Error al conectar:", err);
