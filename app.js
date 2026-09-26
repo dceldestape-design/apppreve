@@ -158,6 +158,10 @@ let state = {
   porcentajeComision: 13,
   liquidaciones: [], // Liquidaciones pagadas por Carlos/Daniel
   
+  // Existencias de stock asignadas (solo del dueño asignado: Carlos o Daniel)
+  stockPorCodigo: {}, // { [cod]: stockDisponible }
+  vendedoresLista: [], // Lista de vendedores activos registrados en Sheets
+  
   config: {
     sheetsUrl: "",
     tipoCambio: 520
@@ -324,6 +328,23 @@ function cargarEstadoLocal() {
   if (cola) {
     try { state.colaOffline = JSON.parse(cola); } catch(e) { state.colaOffline = []; }
   }
+
+  const stk = localStorage.getItem("pv_stock_vendedor");
+  if (stk) {
+    try { state.stockPorCodigo = JSON.parse(stk); } catch(e) { state.stockPorCodigo = {}; }
+  }
+
+  const vlist = localStorage.getItem("pv_vendedores_lista");
+  if (vlist) {
+    try { state.vendedoresLista = JSON.parse(vlist); } catch(e) { state.vendedoresLista = []; }
+  }
+}
+
+function guardarStockLocal() {
+  localStorage.setItem("pv_stock_vendedor", JSON.stringify(state.stockPorCodigo || {}));
+}
+function guardarVendedoresListaLocal() {
+  localStorage.setItem("pv_vendedores_lista", JSON.stringify(state.vendedoresLista || []));
 }
 
 function guardarProductosLocal() {
@@ -390,16 +411,56 @@ function abrirModalVendedor(forzado = false) {
   const modal = document.getElementById("modalVendedor");
   const input = document.getElementById("inputNombreVendedor");
   const btnCerrar = document.getElementById("btnCerrarModalVendedor");
+  const selectCont = document.getElementById("vendedorSelectContainer");
+  const selectEl = document.getElementById("selectVendedorRegistrado");
+  const datalist = document.getElementById("datalistVendedoresSatelite");
+
   if (input) input.value = state.vendedor || "";
   if (btnCerrar) {
     if (forzado) btnCerrar.classList.add("hidden");
     else btnCerrar.classList.remove("hidden");
   }
+
+  // Si hay lista de vendedores registrados, poblar el selector y datalist
+  const listaVends = (state.vendedoresLista || []).filter(v => String(v.estado || "ACTIVO").toUpperCase() === "ACTIVO");
+  if (selectEl && datalist) {
+    selectEl.innerHTML = '<option value="">-- Elige tu nombre de la lista --</option>';
+    datalist.innerHTML = '';
+
+    listaVends.forEach(v => {
+      const opt = document.createElement("option");
+      opt.value = v.nombre;
+      opt.textContent = `👤 ${v.nombre}`;
+      if (String(v.nombre).trim().toLowerCase() === String(state.vendedor).trim().toLowerCase()) {
+        opt.selected = true;
+      }
+      selectEl.appendChild(opt);
+
+      const dOpt = document.createElement("option");
+      dOpt.value = v.nombre;
+      datalist.appendChild(dOpt);
+    });
+
+    if (selectCont) {
+      if (listaVends.length > 0) {
+        selectCont.classList.remove("hidden");
+      } else {
+        selectCont.classList.add("hidden");
+      }
+    }
+  }
+
   if (modal) {
     modal.classList.remove("hidden");
     modal.classList.add("flex");
   }
   inicializarIconos();
+}
+
+function seleccionarVendedorDeLista(nombre) {
+  if (!nombre) return;
+  const input = document.getElementById("inputNombreVendedor");
+  if (input) input.value = nombre;
 }
 
 function cerrarModalVendedor() {
@@ -533,16 +594,22 @@ function limpiarCacheLocal() {
     localStorage.removeItem("pv_clientes");
     localStorage.removeItem("pv_pedidos");
     localStorage.removeItem("pv_facturas");
+    localStorage.removeItem("pv_liquidaciones");
     localStorage.removeItem("pv_carrito");
     localStorage.removeItem("pv_cola_offline");
+    localStorage.removeItem("pv_stock_vendedor");
+    localStorage.removeItem("pv_vendedores_lista");
 
     // Reiniciar estado en memoria
     state.productos = [];
     state.clientes = [];
     state.misPedidos = [];
     state.facturas = [];
+    state.liquidaciones = [];
     state.pedidoCarrito = [];
     state.colaOffline = [];
+    state.stockPorCodigo = {};
+    state.vendedoresLista = [];
 
     // Preservar configuración y vendedor
     state.config = config;
@@ -717,6 +784,32 @@ function renderizarProductos() {
               <span class="text-[9px] text-slate-500 font-mono shrink-0">${p.codigo}</span>
             </div>
             <h3 class="text-sm font-bold text-white leading-snug line-clamp-2">${p.nombre || p.codigo}</h3>
+            
+            <!-- Existencias de Stock Disponibles (Sin revelar a quién pertenece) -->
+            <div class="mt-1 flex items-center gap-1.5">
+              ${(() => {
+                const cod = String(p.codigo || "").trim().toUpperCase();
+                const stockDisponible = (state.stockPorCodigo && state.stockPorCodigo[cod] !== undefined) 
+                  ? state.stockPorCodigo[cod] 
+                  : 0;
+                
+                if (stockDisponible > 0) {
+                  return `
+                    <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg bg-emerald-950/80 border border-emerald-500/40 text-[10px] font-mono font-bold text-emerald-300">
+                      <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+                      <span>${stockDisponible} disponibles</span>
+                    </span>
+                  `;
+                } else {
+                  return `
+                    <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg bg-rose-950/80 border border-rose-500/30 text-[10px] font-mono font-bold text-rose-300">
+                      <span class="w-1.5 h-1.5 rounded-full bg-rose-500"></span>
+                      <span>Agotado</span>
+                    </span>
+                  `;
+                }
+              })()}
+            </div>
           </div>
 
           <div class="mt-2 pt-2 border-t border-slate-800/80 flex items-center justify-between gap-2">
@@ -796,7 +889,21 @@ function agregarAlPedidoDesdeCatalogo(codigo) {
   const p = state.productos.find(prod => prod.codigo === codigo);
   if (!p) return;
 
+  const cod = String(codigo).trim().toUpperCase();
+  const stockDisponible = (state.stockPorCodigo && state.stockPorCodigo[cod] !== undefined)
+    ? state.stockPorCodigo[cod]
+    : 0;
+
   const ya = state.pedidoCarrito.find(it => it.codigo === codigo);
+  const cantActual = ya ? ya.cantidad : 0;
+
+  // Si no hay stock físico disponible
+  if (stockDisponible <= 0) {
+    mostrarToast(`⚠️ Sin existencias disponibles de ${p.nombre}. Se agregará como encargo pendiente.`, "info");
+  } else if (cantActual + 1 > stockDisponible) {
+    mostrarToast(`⚠️ Solo hay ${stockDisponible} uds disponibles en inventario. Cantidad actual: ${cantActual + 1}`, "info");
+  }
+
   if (ya) {
     ya.cantidad += 1;
   } else {
@@ -2212,6 +2319,34 @@ async function sincronizarConSheets(mostrarMensaje = true) {
           return v === miVend;
         });
         guardarLiquidacionesLocal();
+      }
+
+      // F. Vendedores y Asignación de Inventario (Carlos / Daniel)
+      if (json.data.vendedores && Array.isArray(json.data.vendedores)) {
+        state.vendedoresLista = json.data.vendedores;
+        guardarVendedoresListaLocal();
+      }
+
+      // G. Existencias Calculadas (Stock Asignado)
+      // Se extrae únicamente el stock del socio al que esté asignado este vendedor.
+      // La app satélite NO muestra de quién es el stock para proteger la privacidad.
+      if (json.data.stockPorVendedor && typeof json.data.stockPorVendedor === "object") {
+        const miVend = String(state.vendedor || "").trim().toLowerCase();
+        const vendedorInfo = (state.vendedoresLista || []).find(v => String(v.nombre || "").trim().toLowerCase() === miVend);
+        const socioAsignado = (vendedorInfo && vendedorInfo.asignadoA) ? String(vendedorInfo.asignadoA).trim() : "Carlos";
+        
+        const mapaStock = {};
+        Object.keys(json.data.stockPorVendedor).forEach(cod => {
+          const s = json.data.stockPorVendedor[cod];
+          if (s) {
+            // Asignar exclusivamente las unidades de Carlos o de Daniel según la asignación
+            const cant = socioAsignado === "Daniel" ? parseNum(s.Daniel, 0) : parseNum(s.Carlos, 0);
+            mapaStock[cod] = cant;
+          }
+        });
+
+        state.stockPorCodigo = mapaStock;
+        guardarStockLocal();
       }
 
       renderizarTodo();

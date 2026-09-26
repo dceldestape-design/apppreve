@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="es" class="min-h-screen bg-slate-950">
 <head>
   <meta charset="UTF-8">
@@ -382,13 +382,21 @@
       </div>
 
       <p class="text-xs text-slate-300 leading-relaxed">
-        Ingresa tu nombre o código de colaborador. Los clientes y pedidos que crees quedarán registrados bajo tu cuenta en el sistema central.
+        Selecciona o escribe tu nombre de vendedor. El sistema conectará automáticamente tu perfil para mostrarte las existencias del inventario correspondiente.
       </p>
 
-      <div class="space-y-1">
+      <div class="space-y-2">
         <label class="block text-xs font-semibold text-slate-400">Nombre de Vendedor / Colaborador *</label>
-        <input type="text" id="inputNombreVendedor" placeholder="Ej: Vendedor Norte / María" 
-          class="w-full px-3 py-2.5 bg-slate-950 border border-slate-700 rounded-xl text-sm text-white focus:outline-none focus:border-amber-500">
+        <div id="vendedorSelectContainer" class="hidden">
+          <select id="selectVendedorRegistrado" onchange="seleccionarVendedorDeLista(this.value)" 
+            class="w-full px-3 py-2.5 bg-slate-950 border border-amber-500/50 rounded-xl text-sm text-amber-300 font-bold focus:outline-none mb-1">
+            <option value="">-- Elige tu nombre de la lista --</option>
+          </select>
+          <span class="text-[10px] text-slate-400 block mb-1">O escribe otro nombre si no apareces en la lista:</span>
+        </div>
+        <input type="text" id="inputNombreVendedor" placeholder="Ej: Juan Pérez" list="datalistVendedoresSatelite"
+          class="w-full px-3 py-2.5 bg-slate-950 border border-slate-700 rounded-xl text-sm text-white focus:outline-none focus:border-amber-500 font-bold">
+        <datalist id="datalistVendedoresSatelite"></datalist>
       </div>
 
       <button onclick="guardarNombreVendedor()" class="w-full py-3 bg-amber-500 hover:bg-amber-400 text-slate-950 font-black rounded-xl text-xs uppercase tracking-wider active:scale-95 transition-all shadow-md">
