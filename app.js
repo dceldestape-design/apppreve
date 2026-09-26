@@ -133,10 +133,12 @@ document.addEventListener("keydown", (e) => {
 // Estado Global
 let state = {
   vendedor: "Colaborador",
+  vendedorTelefono: "", // Teléfono autenticado del vendedor
   productos: [],
   categoriaSeleccionada: "Todas",
   busquedaProducto: "",
   ordenProductos: "az",
+  filtroStock: "todos",
   
   // Clientes
   clientes: [], // Lista filtrada que pertenece a este vendedor
@@ -245,6 +247,9 @@ function cargarEstadoLocal() {
   const v = localStorage.getItem("pv_vendedor");
   if (v) state.vendedor = v;
 
+  const telSaved = localStorage.getItem("pv_vendedor_telefono");
+  if (telSaved) state.vendedorTelefono = telSaved;
+
   const cfg = localStorage.getItem("pv_config");
   if (cfg) {
     try { state.config = { ...state.config, ...JSON.parse(cfg) }; } catch(e) {}
@@ -273,6 +278,11 @@ function cargarEstadoLocal() {
   if (vendParam) {
     state.vendedor = vendParam;
     localStorage.setItem("pv_vendedor", vendParam);
+  }
+  const telParam = urlParams.get("tel") || urlParams.get("telefono");
+  if (telParam) {
+    state.vendedorTelefono = telParam.replace(/\D/g, "");
+    localStorage.setItem("pv_vendedor_telefono", state.vendedorTelefono);
   }
 
   const prods = localStorage.getItem("pv_productos");
@@ -398,10 +408,11 @@ function actualizarBannerConexion() {
 }
 
 // ==========================================================================
-// GESTIÓN DE IDENTIDAD DE VENDEDOR
+// GESTIÓN DE IDENTIDAD DE VENDEDOR (Login por Teléfono)
 // ==========================================================================
 function comprobarVendedor() {
-  if (!state.vendedor || state.vendedor === "Colaborador" || state.vendedor.trim() === "") {
+  // Forzar login si no hay teléfono guardado O si el nombre está vacío/default
+  if (!state.vendedorTelefono || !state.vendedor || state.vendedor === "Colaborador" || state.vendedor.trim() === "") {
     abrirModalVendedor(true);
   }
   actualizarUIVendedor();
@@ -409,45 +420,24 @@ function comprobarVendedor() {
 
 function abrirModalVendedor(forzado = false) {
   const modal = document.getElementById("modalVendedor");
-  const input = document.getElementById("inputNombreVendedor");
   const btnCerrar = document.getElementById("btnCerrarModalVendedor");
-  const selectCont = document.getElementById("vendedorSelectContainer");
-  const selectEl = document.getElementById("selectVendedorRegistrado");
-  const datalist = document.getElementById("datalistVendedoresSatelite");
+  const telInput = document.getElementById("inputTelefonoVendedor");
+  const feedback = document.getElementById("vendedorLoginFeedback");
 
-  if (input) input.value = state.vendedor || "";
   if (btnCerrar) {
     if (forzado) btnCerrar.classList.add("hidden");
     else btnCerrar.classList.remove("hidden");
   }
 
-  // Si hay lista de vendedores registrados, poblar el selector y datalist
-  const listaVends = (state.vendedoresLista || []).filter(v => String(v.estado || "ACTIVO").toUpperCase() === "ACTIVO");
-  if (selectEl && datalist) {
-    selectEl.innerHTML = '<option value="">-- Elige tu nombre de la lista --</option>';
-    datalist.innerHTML = '';
+  // Pre-rellenar teléfono si ya estaba guardado
+  if (telInput && state.vendedorTelefono) {
+    telInput.value = state.vendedorTelefono;
+  }
 
-    listaVends.forEach(v => {
-      const opt = document.createElement("option");
-      opt.value = v.nombre;
-      opt.textContent = `👤 ${v.nombre}`;
-      if (String(v.nombre).trim().toLowerCase() === String(state.vendedor).trim().toLowerCase()) {
-        opt.selected = true;
-      }
-      selectEl.appendChild(opt);
-
-      const dOpt = document.createElement("option");
-      dOpt.value = v.nombre;
-      datalist.appendChild(dOpt);
-    });
-
-    if (selectCont) {
-      if (listaVends.length > 0) {
-        selectCont.classList.remove("hidden");
-      } else {
-        selectCont.classList.add("hidden");
-      }
-    }
+  // Limpiar feedback previo
+  if (feedback) {
+    feedback.className = "hidden p-2.5 rounded-xl text-xs font-semibold";
+    feedback.textContent = "";
   }
 
   if (modal) {
@@ -455,12 +445,7 @@ function abrirModalVendedor(forzado = false) {
     modal.classList.add("flex");
   }
   inicializarIconos();
-}
-
-function seleccionarVendedorDeLista(nombre) {
-  if (!nombre) return;
-  const input = document.getElementById("inputNombreVendedor");
-  if (input) input.value = nombre;
+  setTimeout(() => telInput && telInput.focus(), 100);
 }
 
 function cerrarModalVendedor() {
@@ -471,20 +456,59 @@ function cerrarModalVendedor() {
   }
 }
 
-function guardarNombreVendedor() {
-  const input = document.getElementById("inputNombreVendedor");
-  const val = (input ? input.value : "").trim();
-  if (!val) {
-    mostrarToast("Por favor ingresa tu nombre de vendedor o colaborador.", "error");
+function validarEIngresarPorTelefono() {
+  const telInput = document.getElementById("inputTelefonoVendedor");
+  const feedback = document.getElementById("vendedorLoginFeedback");
+
+  const rawTel = (telInput ? telInput.value : "").trim();
+  const tel = rawTel.replace(/\D/g, ""); // quitar todo lo que no sea dígito
+  const telShort = tel.startsWith("506") ? tel.slice(3) : tel; // quitar prefijo país si viene
+
+  function showFeedback(msg, isError) {
+    if (!feedback) return;
+    feedback.textContent = msg;
+    feedback.className = `p-2.5 rounded-xl text-xs font-semibold ${
+      isError
+        ? "bg-rose-950 border border-rose-500/40 text-rose-300"
+        : "bg-emerald-950 border border-emerald-500/40 text-emerald-300"
+    }`;
+    feedback.classList.remove("hidden");
+  }
+
+  if (!tel || tel.length < 7) {
+    showFeedback("⚠️ Ingresa un número de teléfono válido.", true);
     return;
   }
-  state.vendedor = val;
-  localStorage.setItem("pv_vendedor", val);
+
+  // Buscar en lista de vendedores (activos e inactivos por separado)
+  const todaLaLista = state.vendedoresLista || [];
+  const encontrado = todaLaLista.find(v => {
+    const vTel = String(v.telefono || "").replace(/\D/g, "");
+    const vTelShort = vTel.startsWith("506") ? vTel.slice(3) : vTel;
+    return vTel === tel || vTelShort === telShort || vTel === telShort || vTelShort === tel;
+  });
+
+  if (!encontrado) {
+    showFeedback("❌ Teléfono no registrado. Consulta con Carlos o Daniel.", true);
+    return;
+  }
+
+  if (String(encontrado.estado || "ACTIVO").toUpperCase() !== "ACTIVO") {
+    showFeedback("🚫 Tu cuenta está inactiva. Consulta con Carlos o Daniel.", true);
+    return;
+  }
+
+  // ÉXITO — guardar sesión
+  state.vendedor = encontrado.nombre;
+  state.vendedorTelefono = telShort || tel;
+  state.porcentajeComision = parseFloat(encontrado.porcentajeComision) || 13;
+  localStorage.setItem("pv_vendedor", state.vendedor);
+  localStorage.setItem("pv_vendedor_telefono", state.vendedorTelefono);
+
   cerrarModalVendedor();
   actualizarUIVendedor();
-  mostrarToast(`Perfil activo: ${val} 👤`, "success");
-  
-  // Re-sincronizar para cargar clientes de este vendedor
+  mostrarToast(`✅ Bienvenido, ${encontrado.nombre}`, "success");
+
   if (state.config.sheetsUrl && navigator.onLine) {
     sincronizarConSheets(false);
   } else {
@@ -599,6 +623,7 @@ function limpiarCacheLocal() {
     localStorage.removeItem("pv_cola_offline");
     localStorage.removeItem("pv_stock_vendedor");
     localStorage.removeItem("pv_vendedores_lista");
+    localStorage.removeItem("pv_vendedor_telefono");
 
     // Reiniciar estado en memoria
     state.productos = [];
@@ -610,12 +635,13 @@ function limpiarCacheLocal() {
     state.colaOffline = [];
     state.stockPorCodigo = {};
     state.vendedoresLista = [];
+    state.vendedorTelefono = "";
 
-    // Preservar configuración y vendedor
+    // Preservar configuración (el vendedor debe volver a autenticarse)
     state.config = config;
-    state.vendedor = vendedor;
+    state.vendedor = "Colaborador";
     localStorage.setItem("pv_config", JSON.stringify(config));
-    localStorage.setItem("pv_vendedor", vendedor);
+    localStorage.setItem("pv_vendedor", "Colaborador");
 
     renderizarTodo();
     mostrarToast("Datos locales eliminados. Sincronizando con Sheets... 🧹", "info");
@@ -690,6 +716,20 @@ function renderizarProductos() {
       String(p.codigo || "").toLowerCase().includes(q) ||
       String(p.categoria || "").toLowerCase().includes(q)
     );
+  }
+
+  // Filtro por stock
+  if (state.filtroStock === "con_stock") {
+    prods = prods.filter(p => {
+      const cod = String(p.codigo || "").trim().toUpperCase();
+      return (state.stockPorCodigo && state.stockPorCodigo[cod] > 0);
+    });
+  } else if (state.filtroStock === "sin_stock") {
+    prods = prods.filter(p => {
+      const cod = String(p.codigo || "").trim().toUpperCase();
+      const s = state.stockPorCodigo && state.stockPorCodigo[cod];
+      return !s || s <= 0;
+    });
   }
 
   // Ordenar
@@ -857,6 +897,32 @@ function renderizarPillsCategorias() {
 
 function filtrarCategoria(cat) {
   state.categoriaSeleccionada = cat;
+  renderizarProductos();
+}
+
+function filtrarStock(modo) {
+  // modo: "todos" | "con_stock" | "sin_stock"
+  state.filtroStock = modo;
+
+  // Actualizar visual de los botones
+  const estilos = {
+    todos:      { active: "bg-slate-700 text-white border-slate-600",      inactive: "bg-slate-900 text-slate-400 border-slate-700" },
+    con_stock:  { active: "bg-emerald-950 text-emerald-300 border-emerald-500/60", inactive: "bg-slate-900 text-emerald-400 border-emerald-500/40" },
+    sin_stock:  { active: "bg-rose-950 text-rose-300 border-rose-500/50",  inactive: "bg-slate-900 text-rose-400 border-rose-500/30" }
+  };
+
+  ["todos", "con_stock", "sin_stock"].forEach(m => {
+    const btn = document.getElementById(`sfBtn-${m}`);
+    if (!btn) return;
+    const s = estilos[m];
+    // Quitar clases de ambos estados
+    btn.className = btn.className
+      .replace(/bg-\S+/g, "").replace(/text-\S+/g, "").replace(/border-\S+/g, "").replace(/  +/g, " ").trim();
+    // Agregar estado correcto
+    const clsBase = "stock-pill px-3 py-1 rounded-full shrink-0 border transition-all text-xs font-bold";
+    btn.className = `${clsBase} ${m === modo ? s.active : s.inactive}`;
+  });
+
   renderizarProductos();
 }
 

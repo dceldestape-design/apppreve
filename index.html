@@ -114,6 +114,22 @@
         <button onclick="filtrarCategoria('Todas')" class="cat-pill active px-3.5 py-1.5 rounded-full shrink-0">Todas</button>
       </div>
 
+      <!-- Filtro de Stock -->
+      <div id="stockFilterPills" class="flex gap-1.5 text-xs font-bold">
+        <button onclick="filtrarStock('todos')" id="sfBtn-todos"
+          class="stock-pill active-stock px-3 py-1 rounded-full shrink-0 bg-slate-700 text-white border border-slate-600 transition-all">
+          📦 Todos
+        </button>
+        <button onclick="filtrarStock('con_stock')" id="sfBtn-con_stock"
+          class="stock-pill px-3 py-1 rounded-full shrink-0 bg-slate-900 text-emerald-400 border border-emerald-500/40 hover:bg-emerald-950/60 transition-all">
+          🟢 Con Stock
+        </button>
+        <button onclick="filtrarStock('sin_stock')" id="sfBtn-sin_stock"
+          class="stock-pill px-3 py-1 rounded-full shrink-0 bg-slate-900 text-rose-400 border border-rose-500/30 hover:bg-rose-950/60 transition-all">
+          🔴 Sin Stock
+        </button>
+      </div>
+
       <div class="flex items-center justify-between text-xs text-slate-400 px-1 font-mono">
         <span>Catálogo disponible: <b id="prodCount" class="text-amber-400">0</b> licores</span>
         <button onclick="cambiarOrden()" class="flex items-center gap-1 hover:text-white font-medium text-[11px]">
@@ -375,32 +391,34 @@
     <div class="bg-slate-900 border border-amber-500/40 rounded-3xl p-5 w-full max-w-sm space-y-4 shadow-2xl">
       <div class="flex items-center justify-between border-b border-slate-800 pb-2.5">
         <div class="flex items-center gap-2">
-          <i data-lucide="user-check" class="w-5 h-5 text-amber-400"></i>
-          <h3 class="text-sm font-bold text-white uppercase tracking-wider">Identificación de Vendedor</h3>
+          <i data-lucide="smartphone" class="w-5 h-5 text-amber-400"></i>
+          <h3 class="text-sm font-bold text-white uppercase tracking-wider">Acceso de Vendedor</h3>
         </div>
         <button onclick="cerrarModalVendedor()" id="btnCerrarModalVendedor" class="text-slate-400 hover:text-white text-sm font-bold">✕</button>
       </div>
 
       <p class="text-xs text-slate-300 leading-relaxed">
-        Selecciona o escribe tu nombre de vendedor. El sistema conectará automáticamente tu perfil para mostrarte las existencias del inventario correspondiente.
+        Ingresa tu <strong>número de teléfono registrado</strong> para validar tu acceso y habilitar las existencias correspondientes.
       </p>
 
-      <div class="space-y-2">
-        <label class="block text-xs font-semibold text-slate-400">Nombre de Vendedor / Colaborador *</label>
-        <div id="vendedorSelectContainer" class="hidden">
-          <select id="selectVendedorRegistrado" onchange="seleccionarVendedorDeLista(this.value)" 
-            class="w-full px-3 py-2.5 bg-slate-950 border border-amber-500/50 rounded-xl text-sm text-amber-300 font-bold focus:outline-none mb-1">
-            <option value="">-- Elige tu nombre de la lista --</option>
-          </select>
-          <span class="text-[10px] text-slate-400 block mb-1">O escribe otro nombre si no apareces en la lista:</span>
+      <div class="space-y-3">
+        <div>
+          <label class="block text-xs font-semibold text-slate-400 mb-1">Número de Teléfono (WhatsApp) *</label>
+          <div class="relative">
+            <input type="tel" id="inputTelefonoVendedor" placeholder="Ej: 8888-8888 o 88888888" 
+              onkeydown="if(event.key==='Enter') validarEIngresarPorTelefono()"
+              class="w-full pl-10 pr-3 py-2.5 bg-slate-950 border border-amber-500/50 rounded-xl text-sm text-white font-mono font-bold focus:outline-none focus:border-amber-400">
+            <span class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500">📞</span>
+          </div>
         </div>
-        <input type="text" id="inputNombreVendedor" placeholder="Ej: Juan Pérez" list="datalistVendedoresSatelite"
-          class="w-full px-3 py-2.5 bg-slate-950 border border-slate-700 rounded-xl text-sm text-white focus:outline-none focus:border-amber-500 font-bold">
-        <datalist id="datalistVendedoresSatelite"></datalist>
+
+        <!-- Mensaje de estado / error en el modal -->
+        <div id="vendedorLoginFeedback" class="hidden p-2.5 rounded-xl text-xs font-semibold"></div>
       </div>
 
-      <button onclick="guardarNombreVendedor()" class="w-full py-3 bg-amber-500 hover:bg-amber-400 text-slate-950 font-black rounded-xl text-xs uppercase tracking-wider active:scale-95 transition-all shadow-md">
-        Guardar y Continuar
+      <button type="button" id="btnIngresarVendedor" onclick="validarEIngresarPorTelefono()" class="w-full py-3 bg-amber-500 hover:bg-amber-400 text-slate-950 font-black rounded-xl text-xs uppercase tracking-wider active:scale-95 transition-all shadow-md flex items-center justify-center gap-2">
+        <i data-lucide="log-in" class="w-4 h-4"></i>
+        <span>Ingresar y Validar</span>
       </button>
     </div>
   </div>
