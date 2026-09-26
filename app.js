@@ -411,7 +411,13 @@ function actualizarBannerConexion() {
 // GESTIÓN DE IDENTIDAD DE VENDEDOR (Login por Teléfono)
 // ==========================================================================
 function comprobarVendedor() {
-  // Forzar login si no hay teléfono guardado O si el nombre está vacío/default
+  // 1. Si no está configurada la URL de Google Sheets, pedir primero la URL
+  if (!state.config || !state.config.sheetsUrl || !state.config.sheetsUrl.trim()) {
+    abrirModalConfig();
+    return;
+  }
+
+  // 2. Si ya está configurada la URL, validar identidad del vendedor (login por teléfono)
   if (!state.vendedorTelefono || !state.vendedor || state.vendedor === "Colaborador" || state.vendedor.trim() === "") {
     abrirModalVendedor(true);
   }
@@ -456,9 +462,10 @@ function cerrarModalVendedor() {
   }
 }
 
-function validarEIngresarPorTelefono() {
+async function validarEIngresarPorTelefono() {
   const telInput = document.getElementById("inputTelefonoVendedor");
   const feedback = document.getElementById("vendedorLoginFeedback");
+  const btn = document.getElementById("btnIngresarVendedor");
 
   const rawTel = (telInput ? telInput.value : "").trim();
   const tel = rawTel.replace(/\D/g, ""); // quitar todo lo que no sea dígito
@@ -470,9 +477,41 @@ function validarEIngresarPorTelefono() {
     feedback.className = `p-2.5 rounded-xl text-xs font-semibold ${
       isError
         ? "bg-rose-950 border border-rose-500/40 text-rose-300"
-        : "bg-emerald-950 border border-emerald-500/40 text-emerald-300"
+        : "bg-amber-950 border border-amber-500/40 text-amber-300"
     }`;
     feedback.classList.remove("hidden");
+  }
+
+  function buscarEnLista(lista) {
+    if (!Array.isArray(lista)) return null;
+
+    // Normalizar entrada del usuario
+    const digitsIngresados = tel; // solo dígitos
+    const ultimos8Ingresados = digitsIngresados.length >= 8 ? digitsIngresados.slice(-8) : digitsIngresados;
+
+    return lista.find(v => {
+      if (!v) return false;
+      const vTelRaw = String(v.telefono || "").trim();
+      const vTelDigits = vTelRaw.replace(/\D/g, "");
+      const ultimos8Vendedor = vTelDigits.length >= 8 ? vTelDigits.slice(-8) : vTelDigits;
+
+      // 1. Coincidencia directa por dígitos limpios
+      if (vTelDigits && (vTelDigits === digitsIngresados || vTelDigits === telShort || digitsIngresados === (vTelDigits.startsWith("506") ? vTelDigits.slice(3) : vTelDigits))) {
+        return true;
+      }
+
+      // 2. Coincidencia por últimos 8 dígitos (número estándar en Costa Rica)
+      if (ultimos8Ingresados.length === 8 && ultimos8Vendedor.length === 8 && ultimos8Ingresados === ultimos8Vendedor) {
+        return true;
+      }
+
+      // 3. Coincidencia por inclusión
+      if (vTelDigits && digitsIngresados && (vTelDigits.includes(digitsIngresados) || digitsIngresados.includes(vTelDigits))) {
+        return true;
+      }
+
+      return false;
+    });
   }
 
   if (!tel || tel.length < 7) {
@@ -480,39 +519,94 @@ function validarEIngresarPorTelefono() {
     return;
   }
 
-  // Buscar en lista de vendedores (activos e inactivos por separado)
-  const todaLaLista = state.vendedoresLista || [];
-  const encontrado = todaLaLista.find(v => {
-    const vTel = String(v.telefono || "").replace(/\D/g, "");
-    const vTelShort = vTel.startsWith("506") ? vTel.slice(3) : vTel;
-    return vTel === tel || vTelShort === telShort || vTel === telShort || vTelShort === tel;
-  });
+  // Deshabilitar botón mientras se valida
+  if (btn) btn.disabled = true;
 
-  if (!encontrado) {
-    showFeedback("❌ Teléfono no registrado. Consulta con Carlos o Daniel.", true);
-    return;
-  }
+  try {
+    // 1. Siempre refrescar la lista de vendedores desde Sheets al presionar el botón
+    let lista = state.vendedoresLista || [];
 
-  if (String(encontrado.estado || "ACTIVO").toUpperCase() !== "ACTIVO") {
-    showFeedback("🚫 Tu cuenta está inactiva. Consulta con Carlos o Daniel.", true);
-    return;
-  }
+    if (!state.config || !state.config.sheetsUrl || !state.config.sheetsUrl.trim()) {
+      showFeedback("⚠️ Falta configurar la URL de Google Sheets en la app.", true);
+      setTimeout(() => {
+        cerrarModalVendedor();
+        abrirModalConfig();
+      }, 1000);
+      return;
+    }
 
-  // ÉXITO — guardar sesión
-  state.vendedor = encontrado.nombre;
-  state.vendedorTelefono = telShort || tel;
-  state.porcentajeComision = parseFloat(encontrado.porcentajeComision) || 13;
-  localStorage.setItem("pv_vendedor", state.vendedor);
-  localStorage.setItem("pv_vendedor_telefono", state.vendedorTelefono);
+    if (navigator.onLine && state.config.sheetsUrl) {
+      showFeedback("🔄 Verificando estado en Google Sheets...", false);
+      try {
+        const fetchUrl = `${state.config.sheetsUrl}?action=getVendedores&token=${PORTAL_TOKEN}&t=${Date.now()}`;
+        const resp = await fetch(fetchUrl, { cache: "no-store" });
+        const json = await resp.json();
+        // El endpoint devuelve { success: true, data: [...] }
+        const listaFresca = json && json.success && Array.isArray(json.data)
+          ? json.data
+          : (Array.isArray(json && json.vendedores) ? json.vendedores : null);
 
-  cerrarModalVendedor();
-  actualizarUIVendedor();
-  mostrarToast(`✅ Bienvenido, ${encontrado.nombre}`, "success");
+        if (listaFresca && listaFresca.length > 0) {
+          state.vendedoresLista = listaFresca;
+          guardarVendedoresListaLocal();
+          lista = listaFresca;
+        } else if (json && json.error) {
+          console.warn("Sheets devolvió error:", json.error);
+        }
+      } catch (fetchErr) {
+        console.warn("No se pudo refrescar la lista de vendedores:", fetchErr);
+      }
+    }
 
-  if (state.config.sheetsUrl && navigator.onLine) {
-    sincronizarConSheets(false);
-  } else {
-    renderizarTodo();
+    // 2. Buscar el teléfono en la lista (fresca o local)
+    console.log("[LOGIN VENDEDOR] Teléfono ingresado:", tel, "telShort:", telShort, "Total vendedores en lista:", (lista ? lista.length : 0), lista);
+    const encontrado = buscarEnLista(lista);
+
+    if (!encontrado) {
+      if (!lista || lista.length === 0) {
+        showFeedback("⚠️ No hay vendedores en la lista recibida de Google Sheets. Asegúrate de haber guardado al vendedor en el sistema principal o revisa la hoja 'Vendedores'.", true);
+      } else {
+        const resumenTels = lista.map(v => v.nombre + ": " + (v.telefono || "sin tel")).join(", ");
+        console.warn("[LOGIN VENDEDOR] Teléfonos en lista recibida:", resumenTels);
+        showFeedback(`❌ Teléfono (${tel}) no coincide con los registrados (${lista.length} vendedores en sistema). Consulta con Carlos o Daniel.`, true);
+      }
+      return;
+    }
+
+    if (String(encontrado.estado || "ACTIVO").toUpperCase() !== "ACTIVO") {
+      showFeedback("🚫 Tu cuenta está inactiva. Consulta con Carlos o Daniel.", true);
+      return;
+    }
+
+    // ÉXITO — guardar sesión
+    state.vendedor = encontrado.nombre;
+    state.vendedorTelefono = telShort || tel;
+    state.porcentajeComision = parseFloat(encontrado.porcentajeComision) || 13;
+    localStorage.setItem("pv_vendedor", state.vendedor);
+    localStorage.setItem("pv_vendedor_telefono", state.vendedorTelefono);
+
+    showFeedback("✅ Acceso correcto. Sincronizando catálogo y existencias...", false);
+
+    // 3. Sincronizar catálogo, clientes y stock asignado de inmediato
+    if (state.config.sheetsUrl && navigator.onLine) {
+      const syncOk = await sincronizarConSheets(false);
+      // Si fue inactivado durante la sincronización, abortar el ingreso
+      if (syncOk === false || !state.vendedorTelefono || state.vendedor === "Colaborador") {
+        return;
+      }
+    } else {
+      renderizarTodo();
+    }
+
+    cerrarModalVendedor();
+    actualizarUIVendedor();
+    mostrarToast(`✅ Bienvenido, ${encontrado.nombre}`, "success");
+
+  } catch (errG) {
+    console.error("Error en validación de vendedor:", errG);
+    showFeedback("❌ Error al validar: " + (errG.message || errG), true);
+  } finally {
+    if (btn) btn.disabled = false;
   }
 }
 
@@ -570,6 +664,9 @@ function guardarConfiguracionForm() {
   if (url && navigator.onLine) {
     sincronizarConSheets(true);
   }
+
+  // Después de configurar la URL, pedir el teléfono si aún no se ha ingresado
+  comprobarVendedor();
 }
 
 // ==========================================================================
@@ -2393,12 +2490,72 @@ async function sincronizarConSheets(mostrarMensaje = true) {
         guardarVendedoresListaLocal();
       }
 
+      // F.1 Validación estricta de estado del vendedor actual
+      // Si el vendedor fue inactivado en Sheets por Carlos o Daniel, expulsarlo y bloquear el acceso
+      const miVendActual = String(state.vendedor || "").trim().toLowerCase();
+      const miTelActual = String(state.vendedorTelefono || "").replace(/\D/g, "");
+      const miTelShortActual = miTelActual.startsWith("506") ? miTelActual.slice(3) : miTelActual;
+
+      if (miVendActual && miVendActual !== "colaborador" && (state.vendedoresLista || []).length > 0) {
+        const infoVendedorEnLista = (state.vendedoresLista || []).find(v => {
+          const vNom = String(v.nombre || "").trim().toLowerCase();
+          const vTel = String(v.telefono || "").replace(/\D/g, "");
+          const vTelShort = vTel.startsWith("506") ? vTel.slice(3) : vTel;
+          return (vNom === miVendActual) || (miTelActual && (vTel === miTelActual || vTelShort === miTelShortActual || vTel === miTelShortActual || vTelShort === miTelActual));
+        });
+
+        if (infoVendedorEnLista && String(infoVendedorEnLista.estado || "ACTIVO").toUpperCase() !== "ACTIVO") {
+          console.warn("[SEGURIDAD] Vendedor inactivado detectado durante sincronización:", infoVendedorEnLista);
+          // 1. Limpiar credenciales de sesión local
+          state.vendedor = "Colaborador";
+          state.vendedorTelefono = "";
+          localStorage.removeItem("pv_vendedor");
+          localStorage.removeItem("pv_vendedor_telefono");
+          state.stockPorCodigo = {};
+          guardarStockLocal();
+          actualizarUIVendedor();
+
+          // 2. Mostrar alerta explicativa solicitada
+          const alertaInactivo = "🚫 Tu usuario está inactivo. Valida con Carlos o Daniel para verificar tu estado.";
+          mostrarToast(alertaInactivo, "error");
+
+          // 3. Abrir modal forzado con feedback de bloqueo
+          abrirModalVendedor(true);
+          const feedbackModal = document.getElementById("vendedorLoginFeedback");
+          if (feedbackModal) {
+            feedbackModal.textContent = alertaInactivo;
+            feedbackModal.className = "p-2.5 rounded-xl text-xs font-semibold bg-rose-950 border border-rose-500/50 text-rose-300";
+            feedbackModal.classList.remove("hidden");
+          }
+          return false;
+        }
+      }
+
       // G. Existencias Calculadas (Stock Asignado)
       // Se extrae únicamente el stock del socio al que esté asignado este vendedor.
       // La app satélite NO muestra de quién es el stock para proteger la privacidad.
       if (json.data.stockPorVendedor && typeof json.data.stockPorVendedor === "object") {
         const miVend = String(state.vendedor || "").trim().toLowerCase();
-        const vendedorInfo = (state.vendedoresLista || []).find(v => String(v.nombre || "").trim().toLowerCase() === miVend);
+        const miTel = String(state.vendedorTelefono || "").replace(/\D/g, "");
+        const miTelShort = miTel.startsWith("506") ? miTel.slice(3) : miTel;
+
+        const vendedorInfo = (state.vendedoresLista || []).find(v => {
+          const vNom = String(v.nombre || "").trim().toLowerCase();
+          const vTel = String(v.telefono || "").replace(/\D/g, "");
+          const vTelShort = vTel.startsWith("506") ? vTel.slice(3) : vTel;
+          return (vNom === miVend) || (miTel && (vTel === miTel || vTelShort === miTelShort || vTel === miTelShort || vTelShort === miTel));
+        });
+
+        if (vendedorInfo) {
+          if (vendedorInfo.nombre && state.vendedor !== vendedorInfo.nombre) {
+            state.vendedor = vendedorInfo.nombre;
+            localStorage.setItem("pv_vendedor", state.vendedor);
+          }
+          if (vendedorInfo.porcentajeComision) {
+            state.porcentajeComision = parseFloat(vendedorInfo.porcentajeComision) || 13;
+          }
+        }
+
         const socioAsignado = (vendedorInfo && vendedorInfo.asignadoA) ? String(vendedorInfo.asignadoA).trim() : "Carlos";
         
         const mapaStock = {};
