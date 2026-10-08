@@ -150,6 +150,13 @@ let state = {
   
   // Historial de pedidos de este vendedor
   misPedidos: [],
+
+  // Historial de apartados de este vendedor
+  misApartados: [],
+  misAbonosApartados: [],
+  busquedaApartados: "",
+  filtroEstadoApartados: "activos",
+  modoPedido: "pedido", // "pedido" | "apartado"
   
   // Facturas consolidadas de este vendedor (pedidos facturados por Carlos/Daniel)
   facturas: [],
@@ -166,7 +173,7 @@ let state = {
   
   config: {
     sheetsUrl: "",
-    tipoCambio: 520
+    tipoCambio: 500
   },
   
   colaOffline: []
@@ -319,6 +326,16 @@ function cargarEstadoLocal() {
     try { state.misPedidos = JSON.parse(peds); } catch(e) { state.misPedidos = []; }
   }
 
+  const apts = localStorage.getItem("pv_apartados");
+  if (apts) {
+    try { state.misApartados = JSON.parse(apts); } catch(e) { state.misApartados = []; }
+  }
+
+  const abos = localStorage.getItem("pv_abonos_apartados");
+  if (abos) {
+    try { state.misAbonosApartados = JSON.parse(abos); } catch(e) { state.misAbonosApartados = []; }
+  }
+
   const facts = localStorage.getItem("pv_facturas");
   if (facts) {
     try { state.facturas = JSON.parse(facts); } catch(e) { state.facturas = []; }
@@ -364,12 +381,13 @@ function guardarClientesLocal() {
   localStorage.setItem("pv_clientes", JSON.stringify(state.clientes));
 }
 function guardarPedidosLocal() {
-  // Solo guardar en localStorage los pedidos de este vendedor
-  const miVend = String(state.vendedor || "").trim().toLowerCase();
-  const soloMios = miVend
-    ? (state.misPedidos || []).filter(p => String(p.vendedor || "").trim().toLowerCase() === miVend)
-    : (state.misPedidos || []);
-  localStorage.setItem("pv_pedidos", JSON.stringify(soloMios));
+  // Guardar TODOS los pedidos en memoria (el filtrado por vendedor es solo de vista).
+  // Filtrar aquí eliminaba del disco los pedidos de otros nombres/sesiones.
+  localStorage.setItem("pv_pedidos", JSON.stringify(state.misPedidos || []));
+}
+function guardarApartadosLocal() {
+  localStorage.setItem("pv_apartados", JSON.stringify(state.misApartados || []));
+  localStorage.setItem("pv_abonos_apartados", JSON.stringify(state.misAbonosApartados || []));
 }
 function guardarFacturasLocal() {
   localStorage.setItem("pv_facturas", JSON.stringify(state.facturas || []));
@@ -619,7 +637,7 @@ function actualizarUIVendedor() {
 
 function aplicarConfigUI() {
   const tc = document.getElementById("headerExchangeRate");
-  if (tc) tc.textContent = state.config.tipoCambio || 520;
+  if (tc) tc.textContent = state.config.tipoCambio || 500;
   actualizarBadgeCola();
   actualizarBannerConexion();
 }
@@ -632,7 +650,7 @@ function abrirModalConfig() {
   const inputUrl = document.getElementById("configSheetsUrl");
   const inputTC = document.getElementById("configTipoCambio");
   if (inputUrl) inputUrl.value = state.config.sheetsUrl || "";
-  if (inputTC) inputTC.value = state.config.tipoCambio || 520;
+  if (inputTC) inputTC.value = state.config.tipoCambio || 500;
   if (modal) {
     modal.classList.remove("hidden");
     modal.classList.add("flex");
@@ -652,7 +670,7 @@ function guardarConfiguracionForm() {
   const inputUrl = document.getElementById("configSheetsUrl");
   const inputTC = document.getElementById("configTipoCambio");
   const url = (inputUrl ? inputUrl.value : "").trim();
-  const tc = parseNum(inputTC ? inputTC.value : 520, 520);
+  const tc = parseNum(inputTC ? inputTC.value : 500, 500);
 
   state.config.sheetsUrl = url;
   state.config.tipoCambio = tc;
@@ -714,6 +732,8 @@ function limpiarCacheLocal() {
     localStorage.removeItem("pv_productos");
     localStorage.removeItem("pv_clientes");
     localStorage.removeItem("pv_pedidos");
+    localStorage.removeItem("pv_apartados");
+    localStorage.removeItem("pv_abonos_apartados");
     localStorage.removeItem("pv_facturas");
     localStorage.removeItem("pv_liquidaciones");
     localStorage.removeItem("pv_carrito");
@@ -726,6 +746,8 @@ function limpiarCacheLocal() {
     state.productos = [];
     state.clientes = [];
     state.misPedidos = [];
+    state.misApartados = [];
+    state.misAbonosApartados = [];
     state.facturas = [];
     state.liquidaciones = [];
     state.pedidoCarrito = [];
@@ -753,7 +775,7 @@ function limpiarCacheLocal() {
 // NAVEGACIÓN DE VISTAS
 // ==========================================================================
 function cambiarVista(vista) {
-  ["productos", "pedidos", "facturas", "comision", "clientes"].forEach(v => {
+  ["productos", "pedidos", "apartados", "facturas", "comision", "clientes"].forEach(v => {
     const el = document.getElementById("view" + capitalizar(v));
     const tab = document.getElementById("navTab-" + v);
     if (el) {
@@ -768,6 +790,7 @@ function cambiarVista(vista) {
 
   if (vista === "productos") renderizarProductos();
   if (vista === "pedidos") renderizarModuloPedidos();
+  if (vista === "apartados") renderizarModuloApartados();
   if (vista === "facturas") renderizarFacturas();
   if (vista === "comision") renderizarComisiones();
   if (vista === "clientes") renderizarClientes();
@@ -783,6 +806,7 @@ function capitalizar(str) {
 function renderizarTodo() {
   renderizarProductos();
   renderizarModuloPedidos();
+  renderizarModuloApartados();
   renderizarFacturas();
   renderizarComisiones();
   renderizarClientes();
@@ -1045,6 +1069,177 @@ function cambiarOrden() {
   renderizarProductos();
 }
 
+// --- EXPORTAR / COMPARTIR CATÁLOGO POR WHATSAPP ---
+function abrirModalExportarCatalogo() {
+  const modal = document.getElementById("modalExportarCatalogo");
+  if (!modal) return;
+
+  // Poblado dinámico del selector de categorías en el modal
+  const selCat = document.getElementById("exportFiltroCategoria");
+  if (selCat) {
+    const categorias = ["Todas", ...new Set((state.productos || []).map(p => p.categoria || "General"))];
+    selCat.innerHTML = categorias.map(c => `<option value="${c}">${c === "Todas" ? "Todas las categorías" : c}</option>`).join("");
+    // Heredar categoría actualmente seleccionada si existe
+    if (state.categoriaSeleccionada && categorias.includes(state.categoriaSeleccionada)) {
+      selCat.value = state.categoriaSeleccionada;
+    } else {
+      selCat.value = "Todas";
+    }
+  }
+
+  // Heredar filtro de stock si el usuario lo tenía activo
+  const selStock = document.getElementById("exportFiltroStock");
+  if (selStock) {
+    selStock.value = (state.filtroStock === "sin_stock" || state.filtroStock === "todos") ? "todos" : "constock";
+  }
+
+  actualizarVistaPreviaExportarCatalogo();
+
+  modal.classList.remove("hidden");
+  modal.classList.add("flex");
+  inicializarIconos();
+}
+
+function cerrarModalExportarCatalogo() {
+  const modal = document.getElementById("modalExportarCatalogo");
+  if (modal) {
+    modal.classList.add("hidden");
+    modal.classList.remove("flex");
+  }
+}
+
+function generarTextoCatalogoWhatsApp() {
+  const filtroStock = document.getElementById("exportFiltroStock") ? document.getElementById("exportFiltroStock").value : "constock";
+  const filtroCategoria = document.getElementById("exportFiltroCategoria") ? document.getElementById("exportFiltroCategoria").value : "Todas";
+  const mostrarCantidades = document.getElementById("exportMostrarCantidades") ? document.getElementById("exportMostrarCantidades").checked : true;
+
+  const stockMap = state.stockPorCodigo || {};
+  const todos = state.productos || [];
+
+  // Filtrar según opciones
+  let prods = todos.filter(p => {
+    const cod = String(p.codigo || "").trim().toUpperCase();
+    const st = (stockMap[cod] !== undefined) ? stockMap[cod] : (stockMap[p.codigo] || 0);
+    if (filtroStock === "constock" && st <= 0) return false;
+    if (filtroCategoria !== "Todas" && (p.categoria || "General") !== filtroCategoria) return false;
+    return true;
+  });
+
+  // Ordenar por categoría y luego nombre
+  prods.sort((a, b) => {
+    const catA = (a.categoria || "General").localeCompare(b.categoria || "General");
+    if (catA !== 0) return catA;
+    return (a.nombre || "").localeCompare(b.nombre || "");
+  });
+
+  const negocio = "DC EL DESTAPE LICORES";
+  const telefono = state.vendedorTelefono ? `+506 ${state.vendedorTelefono}` : "+506 8992-7936";
+  const fechaHoy = new Date().toLocaleDateString("es-CR", { day: "2-digit", month: "short", year: "numeric" });
+
+  const getEmojiCategoria = (cat = "") => {
+    const c = cat.toUpperCase();
+    if (c.includes("WHISKY") || c.includes("WHISKEY") || c.includes("BOURBON")) return "🥃";
+    if (c.includes("RON")) return "🍹";
+    if (c.includes("TEQUILA")) return "🌵";
+    if (c.includes("VODKA") || c.includes("GIN")) return "🍸";
+    if (c.includes("VINO") || c.includes("CHAMPAGNE")) return "🍷";
+    if (c.includes("CREMA")) return "☕";
+    if (c.includes("CERVEZA")) return "🍺";
+    return "🍾";
+  };
+
+  let texto = `✨━━━━━━━━━━━━━━━━━✨\n`;
+  texto += `🥂 *${negocio.toUpperCase()}* 🥂\n`;
+  texto += `📋 *MENÚ DE PRECIOS & DISPONIBILIDAD*\n`;
+  texto += `🗓️ ${fechaHoy}  •  📱 ${telefono}\n`;
+  texto += `✨━━━━━━━━━━━━━━━━━✨\n`;
+
+  if (prods.length === 0) {
+    texto += `\n_No hay productos disponibles con los filtros seleccionados._\n`;
+  } else {
+    let catActual = "";
+    prods.forEach(p => {
+      const cat = (p.categoria || "GENERAL").toUpperCase();
+      if (cat !== catActual) {
+        catActual = cat;
+        const emoji = getEmojiCategoria(catActual);
+        texto += `\n${emoji} ━━ *${catActual}* ━━\n`;
+      }
+
+      const cod = String(p.codigo || "").trim().toUpperCase();
+      const st = (stockMap[cod] !== undefined) ? stockMap[cod] : (stockMap[p.codigo] || 0);
+      const precioCRC = fmtCRC(p.precioVentaCRC || 0);
+      
+      let badgeStock = "";
+      if (mostrarCantidades) {
+        badgeStock = st > 0 ? ` _(🟢 ${st} disp.)_` : ` _(⏳ Encargo)_`;
+      }
+
+      // Formato limpio en colones
+      texto += `▫️ *${p.nombre}*${badgeStock}\n    💰 *${precioCRC}*\n`;
+    });
+  }
+
+  texto += `\n━━━━━━━━━━━━━━━━━━━━\n`;
+  texto += `🛵 *Entregas y envíos a convenir*\n`;
+  texto += `📲 *Instagram:* instagram.com/dceldestape\n`;
+  texto += `🔵 *Facebook:* facebook.com/share/1CHT3FRSc6/\n`;
+  texto += `━━━━━━━━━━━━━━━━━━━━\n`;
+  texto += `¡Escríbenos para apartar tus licores favoritos! 🥂✨`;
+
+  return { texto, count: prods.length };
+}
+
+function actualizarVistaPreviaExportarCatalogo() {
+  const preview = document.getElementById("exportPreviewText");
+  const countEl = document.getElementById("exportItemsCount");
+  const { texto, count } = generarTextoCatalogoWhatsApp();
+  
+  if (preview) preview.value = texto;
+  if (countEl) countEl.textContent = count;
+}
+
+function copiarTextoCatalogoWhatsApp() {
+  const { texto, count } = generarTextoCatalogoWhatsApp();
+  if (!texto) {
+    mostrarToast("No hay datos para copiar", "error");
+    return;
+  }
+
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(texto).then(() => {
+      mostrarToast(`¡Catálogo de ${count} licores copiado al portapapeles! 📋`, "success");
+    }).catch(() => {
+      // Fallback manual con textarea
+      const ta = document.getElementById("exportPreviewText");
+      if (ta) {
+        ta.select();
+        document.execCommand("copy");
+        mostrarToast(`¡Catálogo de ${count} licores copiado! 📋`, "success");
+      }
+    });
+  } else {
+    const ta = document.getElementById("exportPreviewText");
+    if (ta) {
+      ta.select();
+      document.execCommand("copy");
+      mostrarToast(`¡Catálogo de ${count} licores copiado! 📋`, "success");
+    }
+  }
+}
+
+function enviarCatalogoWhatsAppDirecto() {
+  const { texto, count } = generarTextoCatalogoWhatsApp();
+  if (!texto) {
+    mostrarToast("No hay datos para exportar", "error");
+    return;
+  }
+  const encoded = encodeURIComponent(texto);
+  const url = `https://wa.me/?text=${encoded}`;
+  window.open(url, "_blank");
+  mostrarToast(`Abriendo WhatsApp con ${count} productos... 📲`, "success");
+}
+
 // ==========================================================================
 // 2. MÓDULO PEDIDOS (ENCARGOS)
 // ==========================================================================
@@ -1178,8 +1373,98 @@ function renderizarItemsPedidoActual() {
   if (totalUnidsEl) totalUnidsEl.textContent = `${totalUnidades} unids`;
   if (totalCRCEl) totalCRCEl.textContent = fmtCRC(totalMontoCRC);
 
+  if (state.modoPedido === "apartado") {
+    actualizarCalculoApartadoPreventaUI();
+  }
+
   const badgeNav = document.getElementById("navPedidosBadge");
   if (badgeNav) badgeNav.classList.remove("hidden");
+}
+
+function cambiarModoPedido(modo) {
+  state.modoPedido = modo;
+  const btnPedido = document.getElementById("btnModoPedido");
+  const btnApartado = document.getElementById("btnModoApartado");
+  const bannerApartado = document.getElementById("pedidoBannerModoApartado");
+  const btnConfirmar = document.getElementById("btnConfirmarPedido");
+  const headerIcon = document.getElementById("pedidoHeaderIcon");
+  const headerIconCont = document.getElementById("pedidoHeaderIconContainer");
+  const headerTitulo = document.getElementById("pedidoHeaderTitulo");
+  const headerSubtitulo = document.getElementById("pedidoHeaderSubtitulo");
+  const labelCliente = document.getElementById("pedidoLabelCliente");
+  const totalLabel = document.getElementById("pedidoTotalLabel");
+
+  if (modo === "apartado") {
+    if (btnPedido) {
+      btnPedido.className = "py-2 rounded-lg bg-transparent text-slate-400 hover:text-white flex items-center justify-center gap-1.5 active:scale-95 transition-all";
+    }
+    if (btnApartado) {
+      btnApartado.className = "py-2 rounded-lg bg-blue-600 text-white shadow-md flex items-center justify-center gap-1.5 active:scale-95 transition-all";
+    }
+    if (bannerApartado) bannerApartado.classList.remove("hidden");
+    if (btnConfirmar) {
+      btnConfirmar.className = "w-full py-3 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-black rounded-2xl shadow-lg shadow-blue-500/20 active:scale-95 transition-all flex items-center justify-center gap-2 text-xs uppercase tracking-wider";
+      btnConfirmar.innerHTML = `<i data-lucide="bookmark-check" class="w-4 h-4"></i><span>Confirmar y Reservar Apartado</span>`;
+    }
+    if (headerIconCont) headerIconCont.className = "p-2 rounded-xl bg-blue-500/20 text-blue-400";
+    if (headerIcon) headerIcon.setAttribute("data-lucide", "bookmark");
+    if (headerTitulo) headerTitulo.textContent = "Nuevo Apartado de Cliente";
+    if (headerSubtitulo) headerSubtitulo.textContent = "Reserva mercadería y gestiona abonos";
+    if (labelCliente) labelCliente.textContent = "Cliente del Apartado *";
+    if (totalLabel) totalLabel.textContent = "Total Apartado:";
+    actualizarCalculoApartadoPreventaUI();
+    mostrarToast("Modo 'Apartado' (reserva con abono) 🔖", "info");
+  } else {
+    if (btnPedido) {
+      btnPedido.className = "py-2 rounded-lg bg-amber-500 text-slate-950 shadow-md flex items-center justify-center gap-1.5 active:scale-95 transition-all";
+    }
+    if (btnApartado) {
+      btnApartado.className = "py-2 rounded-lg bg-transparent text-slate-400 hover:text-white flex items-center justify-center gap-1.5 active:scale-95 transition-all";
+    }
+    if (bannerApartado) bannerApartado.classList.add("hidden");
+    if (btnConfirmar) {
+      btnConfirmar.className = "w-full py-3 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 font-black rounded-2xl shadow-lg shadow-amber-500/20 active:scale-95 transition-all flex items-center justify-center gap-2 text-xs uppercase tracking-wider";
+      btnConfirmar.innerHTML = `<i data-lucide="check-circle" class="w-4 h-4"></i><span>Confirmar y Enviar Pedido</span>`;
+    }
+    if (headerIconCont) headerIconCont.className = "p-2 rounded-xl bg-amber-500/20 text-amber-400";
+    if (headerIcon) headerIcon.setAttribute("data-lucide", "shopping-bag");
+    if (headerTitulo) headerTitulo.textContent = "Nuevo Pedido / Encargo";
+    if (headerSubtitulo) headerSubtitulo.textContent = "Para abastecer con la distribuidora";
+    if (labelCliente) labelCliente.textContent = "Cliente del Pedido *";
+    if (totalLabel) totalLabel.textContent = "Monto Venta Estimado:";
+    mostrarToast("Modo 'Encargo / Pedido' 📋", "info");
+  }
+
+  inicializarIconos();
+  renderizarItemsPedidoActual();
+}
+
+function actualizarCalculoApartadoPreventaUI() {
+  const resumenBotellas = document.getElementById("pedidoApartadoResumenBotellas");
+  const totalCRCEl = document.getElementById("pedidoApartadoTotalCRC");
+  const saldoCRCEl = document.getElementById("pedidoApartadoSaldoCRC");
+  const inputAbono = document.getElementById("pedidoApartadoAbonoCRC");
+
+  let totalCRC = 0;
+  let totalBotellas = 0;
+  (state.pedidoCarrito || []).forEach(it => {
+    totalCRC += (it.cantidad * (it.precioVentaCRC || 0));
+    totalBotellas += it.cantidad;
+  });
+
+  const abono = Math.max(0, Number(inputAbono ? inputAbono.value : 0) || 0);
+  const saldo = Math.max(0, totalCRC - abono);
+
+  if (resumenBotellas) resumenBotellas.textContent = `${totalBotellas} botella(s)`;
+  if (totalCRCEl) totalCRCEl.textContent = fmtCRC(totalCRC);
+  if (saldoCRCEl) {
+    saldoCRCEl.textContent = fmtCRC(saldo);
+    if (saldo <= 0 && totalCRC > 0) {
+      saldoCRCEl.className = "text-sm font-black text-emerald-400";
+    } else {
+      saldoCRCEl.className = "text-sm font-black text-amber-400";
+    }
+  }
 }
 
 function ajustarCantidadItemPedido(idx, delta) {
@@ -1208,8 +1493,19 @@ function vaciarCarritoPedido() {
 }
 
 function guardarPedidoActual() {
+  if (state.modoPedido === "apartado") {
+    return guardarApartadoActual();
+  }
+
   if (!state.pedidoCarrito || state.pedidoCarrito.length === 0) {
     mostrarToast("Agrega al menos un licor al pedido.", "error");
+    return;
+  }
+
+  const vendActual = String(state.vendedor || "").trim();
+  if (!vendActual || vendActual.toLowerCase() === "colaborador" || !state.vendedorTelefono) {
+    mostrarToast("Ingresa con tu teléfono de vendedor antes de registrar pedidos.", "error");
+    abrirModalVendedor(true);
     return;
   }
 
@@ -1255,6 +1551,141 @@ function guardarPedidoActual() {
 
   renderizarModuloPedidos();
   mostrarToast(`¡Pedido ${idPedido} registrado exitosamente para ${clienteNombre}! 🚀`, "success");
+}
+
+function guardarApartadoActual() {
+  if (!state.pedidoCarrito || state.pedidoCarrito.length === 0) {
+    mostrarToast("Agrega al menos un licor al apartado.", "error");
+    return;
+  }
+
+  const vendActual = String(state.vendedor || "").trim();
+  if (!vendActual || vendActual.toLowerCase() === "colaborador" || !state.vendedorTelefono) {
+    mostrarToast("Ingresa con tu teléfono de vendedor antes de registrar apartados.", "error");
+    abrirModalVendedor(true);
+    return;
+  }
+
+  const cliId = state.pedidoClienteSeleccionado;
+  if (!cliId) {
+    mostrarToast("Debes seleccionar un cliente para registrar el apartado.", "error");
+    return;
+  }
+
+  const cli = state.clientes.find(c => c.id === cliId);
+  const clienteNombre = cli ? cli.nombre : "Cliente General";
+  const clienteTelefono = cli ? cli.telefono : "";
+
+  const tc = Number(state.config.tipoCambio) || 500;
+  let totalCRC = 0;
+  let totalUSD = 0;
+  state.pedidoCarrito.forEach(i => {
+    const subCRC = i.cantidad * i.precioVentaCRC;
+    const subUSD = i.cantidad * (i.precioVentaUSD || (i.precioVentaCRC / tc));
+    totalCRC += subCRC;
+    totalUSD += subUSD;
+  });
+
+  const inputAbono = document.getElementById("pedidoApartadoAbonoCRC");
+  const abonoInicialCRC = Math.max(0, Number(inputAbono ? inputAbono.value : 0) || 0);
+
+  if (abonoInicialCRC > totalCRC) {
+    mostrarToast("El abono inicial no puede ser mayor al total del apartado.", "error");
+    if (inputAbono) inputAbono.focus();
+    return;
+  }
+
+  const abonoInicialUSD = abonoInicialCRC > 0 ? (abonoInicialCRC / tc) : 0;
+  const saldoPendienteCRC = Math.max(0, totalCRC - abonoInicialCRC);
+  const saldoPendienteUSD = Math.max(0, totalUSD - abonoInicialUSD);
+  const metodoPagoAbono = document.getElementById("pedidoApartadoMetodoPago")?.value || "Efectivo";
+  const fechaVenc = document.getElementById("pedidoApartadoFechaVenc")?.value || "";
+  const notas = document.getElementById("pedidoApartadoNotas")?.value?.trim() || "";
+
+  const ahora = new Date();
+  const idApartado = "APT-" + ahora.toISOString().slice(2, 10).replace(/-/g, "") + "-" + Math.random().toString(36).slice(2, 6).toUpperCase();
+  const estado = saldoPendienteCRC <= 0 ? "Liquidado" : "Activo";
+
+  const abonosList = [];
+  if (abonoInicialCRC > 0) {
+    const idAbono = "ABO-" + Date.now().toString().slice(-6);
+    const abonoObj = {
+      id: idAbono,
+      fecha: ahora.toISOString(),
+      idApartado: idApartado,
+      cliente: clienteNombre,
+      telefono: clienteTelefono,
+      montoCRC: abonoInicialCRC,
+      montoUSD: abonoInicialUSD,
+      metodoPago: metodoPagoAbono,
+      saldoRestanteCRC: saldoPendienteCRC,
+      saldoRestanteUSD: saldoPendienteUSD,
+      recibidoPor: state.vendedor,
+      notas: "Abono inicial al momento de apartar"
+    };
+    abonosList.push(abonoObj);
+    if (!state.misAbonosApartados) state.misAbonosApartados = [];
+    state.misAbonosApartados.unshift(abonoObj);
+  }
+
+  const apartadoObj = {
+    id: idApartado,
+    fecha: ahora.toISOString(),
+    vendedor: state.vendedor || "Colaborador",
+    cliente: clienteNombre,
+    clienteId: cli ? cli.id : null,
+    clienteTelefono: clienteTelefono,
+    items: state.pedidoCarrito.map(it => ({
+      codigo: String(it.codigo || "").trim().toUpperCase(),
+      nombre: String(it.nombre || it.codigo).trim(),
+      cantidad: Number(it.cantidad || 1),
+      precioVentaCRC: Number(it.precioVentaCRC || 0),
+      precioVentaUSD: Number(it.precioVentaUSD || (it.precioVentaCRC / tc)),
+      subtotalCRC: Number(it.cantidad || 1) * Number(it.precioVentaCRC || 0),
+      subtotalUSD: Number(it.cantidad || 1) * Number(it.precioVentaUSD || (it.precioVentaCRC / tc))
+    })),
+    montoTotalCRC: totalCRC,
+    montoTotalUSD: totalUSD,
+    totalAbonadoCRC: abonoInicialCRC,
+    totalAbonadoUSD: abonoInicialUSD,
+    saldoPendienteCRC: saldoPendienteCRC,
+    saldoPendienteUSD: saldoPendienteUSD,
+    estado: estado,
+    fechaVencimiento: fechaVenc,
+    fechaEntrega: "",
+    notas: notas,
+    abonos: abonosList
+  };
+
+  if (!state.misApartados) state.misApartados = [];
+  state.misApartados.unshift(apartadoObj);
+  guardarApartadosLocal();
+
+  // Encolar acción para sincronizar con Google Sheets
+  encolarAccionSync("registrarApartado", {
+    apartado: {
+      ...apartadoObj,
+      abonoInicialCRC: abonoInicialCRC,
+      abonoInicialUSD: abonoInicialUSD,
+      metodoPagoAbono: metodoPagoAbono
+    }
+  });
+
+  // Limpiar pedido actual
+  state.pedidoCarrito = [];
+  state.pedidoClienteSeleccionado = null;
+  guardarCarritoLocal();
+  if (inputAbono) inputAbono.value = "0";
+  const inNotas = document.getElementById("pedidoApartadoNotas");
+  if (inNotas) inNotas.value = "";
+
+  renderizarModuloPedidos();
+  renderizarModuloApartados();
+
+  mostrarToast(`¡Apartado ${idApartado} registrado para ${clienteNombre}! 🔖`, "success");
+
+  // Compartir comprobante por WhatsApp
+  compartirApartadoWhatsApp(idApartado);
 }
 
 // ==========================================================================
@@ -1413,7 +1844,7 @@ function renderizarMisPedidosHistorial() {
   cont.innerHTML = lista.map(p => {
     const fStr = p.fecha ? new Date(p.fecha).toLocaleDateString([], { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" }) : "S/F";
     const totalBotellas = (p.items || []).reduce((acc, it) => acc + parseNum(it.cantidad, 1), 0);
-    const esComprado = p.estado === "comprado";
+    const esComprado = String(p.estado || "").trim().toLowerCase() === "comprado";
 
     return `
       <div class="p-3 bg-slate-950/80 border ${esComprado ? 'border-emerald-500/40' : 'border-slate-800'} rounded-2xl space-y-2 text-xs">
@@ -1493,7 +1924,7 @@ function compartirPedidoWhatsApp(idPedido) {
   texto += `📷 Instagram:\nhttps://www.instagram.com/dceldestape\n\n`;
   texto += `🔵 Facebook:\nhttps://www.facebook.com/share/1CHT3FRSc6/`;
 
-  const telDestino = String(p.clienteTelefono || "").replace(/\D/g, "");
+  const telDestino = String(p.clienteTelefono || "").replace(/\D/g, "").replace(/^506/, "");
   const waUrl = telDestino 
     ? `https://wa.me/506${telDestino}?text=${encodeURIComponent(texto)}`
     : `https://wa.me/?text=${encodeURIComponent(texto)}`;
@@ -1547,11 +1978,11 @@ function compartirFacturaWhatsApp(idFactura) {
   let telDestino = "";
   const cliEncontrado = (state.clientes || []).find(c => String(c.nombre || "").trim().toLowerCase() === String(f.cliente || "").trim().toLowerCase());
   if (cliEncontrado && cliEncontrado.telefono) {
-    telDestino = String(cliEncontrado.telefono).replace(/\D/g, "");
+    telDestino = String(cliEncontrado.telefono).replace(/\D/g, "").replace(/^506/, "");
   } else {
     const pedEncontrado = (state.misPedidos || []).find(p => p.id === f.pedidoOrigenId);
     if (pedEncontrado && pedEncontrado.clienteTelefono) {
-      telDestino = String(pedEncontrado.clienteTelefono).replace(/\D/g, "");
+      telDestino = String(pedEncontrado.clienteTelefono).replace(/\D/g, "").replace(/^506/, "");
     }
   }
 
@@ -1764,7 +2195,7 @@ function renderizarComisiones() {
   if (!elTotalCRC || !cont) return;
 
   const pct = (Number(state.porcentajeComision) || 13) / 100;
-  const tc = Number(state.config.tipoCambio) || 520;
+  const tc = Number(state.config.tipoCambio) || 500;
   const periodo = state.filtroPeriodoComision || "todos";
 
   const ahora = new Date();
@@ -2075,6 +2506,7 @@ function abrirModalNuevoCliente() {
     modal.classList.remove("hidden");
     modal.classList.add("flex");
   }
+  actualizarBotonContactos();
   inicializarIconos();
   setTimeout(() => document.getElementById("modalClienteNombre")?.focus(), 100);
 }
@@ -2095,7 +2527,147 @@ function abrirModalEditarCliente(id) {
     modal.classList.remove("hidden");
     modal.classList.add("flex");
   }
+  actualizarBotonContactos();
   inicializarIconos();
+}
+
+// Selector de contactos del dispositivo (Contact Picker API: Chrome Android, HTTPS/localhost).
+// Si no está disponible, el botón se oculta y se sigue digitando manual.
+function contactosDisponibles() {
+  try {
+    return ("contacts" in navigator) && ("ContactsManager" in window);
+  } catch (e) { return false; }
+}
+
+function actualizarBotonContactos() {
+  // El botón siempre visible: si el navegador no soporta Contact Picker,
+  // al pulsarlo se explica cómo hacerlo (Chrome Android + HTTPS).
+  const b = document.getElementById("btnContactoCliente");
+  if (!b) return;
+  b.classList.remove("hidden");
+  b.classList.add("flex");
+}
+
+async function seleccionarContactoTelefono() {
+  const nombreInput = document.getElementById("modalClienteNombre");
+  const telInput = document.getElementById("modalClienteTelefono");
+  // 1. Nativo en Chrome/Edge Android (HTTPS o localhost)
+  if (contactosDisponibles()) {
+    try {
+      const lista = await navigator.contacts.select(["name", "tel"], { multiple: false });
+      if (!lista || lista.length === 0) return;
+      const c = lista[0] || {};
+      rellenarClienteDesdeContacto(
+        String((c.name && c.name[0]) || "").trim(),
+        String((Array.isArray(c.tel) ? c.tel[0] : "") || "").replace(/[^\d+]/g, "").trim()
+      );
+      return;
+    } catch (e) {
+      if (e && e.name === "NotAllowedError") mostrarToast("Permiso de contactos denegado.", "error");
+      else if (!(e && e.name === "AbortError")) mostrarToast("No se pudo leer contactos.", "error");
+      return;
+    }
+  }
+  // 2. Fallback PC/escritorio: elegir desde archivo vCard (.vcf exportado de Google Contactos)
+  const inp = document.getElementById("inputVcardContactos");
+  if (inp) {
+    mostrarToast("En PC elige tu archivo de contactos .vcf (se exporta gratis desde contacts.google.com).", "info");
+    inp.click();
+  } else {
+    mostrarToast("En este navegador no se puede abrir la agenda. Usa Chrome en Android con la app instalada (HTTPS) o digita el número manual.", "info");
+  }
+}
+
+function rellenarClienteDesdeContacto(nombre, tel) {
+  const nombreInput = document.getElementById("modalClienteNombre");
+  const telInput = document.getElementById("modalClienteTelefono");
+  if (nombreInput && nombre && !String(nombreInput.value || "").trim()) nombreInput.value = nombre;
+  if (telInput && tel) {
+    telInput.value = tel;
+    telInput.focus();
+  }
+  if (!tel) mostrarToast("El contacto no tiene teléfono.", "error");
+}
+
+// --- Importar agenda desde vCard (.vcf) para PC ---
+let _contactosVcard = [];
+
+function parseVcards(texto) {
+  const contactos = [];
+  const bloques = String(texto || "").split(/BEGIN:VCARD/i);
+  for (const b of bloques) {
+    if (!b || !b.trim()) continue;
+    const lineas = b.replace(/\r\n/g, "\n").replace(/\r/g, "\n").replace(/\n[ \t]/g, "").split("\n");
+    let nombre = "";
+    const tels = [];
+    for (const ln of lineas) {
+      const mFn = ln.match(/^FN[^:]*:(.*)$/i);
+      if (mFn && !nombre) nombre = mFn[1].trim();
+      const mTel = ln.match(/^TEL[^:]*:(.*)$/i);
+      if (mTel) {
+        const num = mTel[1].trim();
+        if (!num) continue;
+        const pref = /cell|mobile|iphone/i.test(ln) ? 0 : (/voice|pref/i.test(ln) ? 1 : 2);
+        tels.push({ num, pref });
+      }
+    }
+    if (!nombre) {
+      const mN = b.match(/^N[^:]*:(.*)$/im);
+      if (mN) {
+        const p = mN[1].split(";");
+        nombre = [(p[1] || ""), (p[0] || "")].join(" ").trim();
+      }
+    }
+    tels.sort((a, z) => a.pref - z.pref);
+    if (nombre || tels.length > 0) {
+      contactos.push({ nombre: nombre || "(Sin nombre)", tel: tels.length > 0 ? tels[0].num : "" });
+    }
+  }
+  return contactos;
+}
+
+function importarContactosVcard(input) {
+  const f = input && input.files && input.files[0];
+  if (!f) return;
+  const lector = new FileReader();
+  lector.onload = () => {
+    try {
+      _contactosVcard = parseVcards(lector.result);
+    } catch (e) {
+      _contactosVcard = [];
+    }
+    input.value = "";
+    const sel = document.getElementById("selectContactoVcard");
+    if (!_contactosVcard.length) {
+      mostrarToast("No se encontraron contactos en ese archivo.", "error");
+      if (sel) sel.classList.add("hidden");
+      return;
+    }
+    if (_contactosVcard.length === 1) {
+      if (sel) sel.classList.add("hidden");
+      rellenarClienteDesdeContacto(_contactosVcard[0].nombre, _contactosVcard[0].tel);
+      mostrarToast("Contacto importado ✅", "success");
+      return;
+    }
+    if (sel) {
+      sel.innerHTML = '<option value="">-- Elige un contacto (' + _contactosVcard.length + ') --</option>' +
+        _contactosVcard.map((c, i) => `<option value="${i}">${String(c.nombre).slice(0, 40)}${c.tel ? " • " + String(c.tel).slice(0, 20) : ""}</option>`).join("");
+      sel.classList.remove("hidden");
+      mostrarToast("Selecciona el contacto de la lista 👇", "info");
+    }
+  };
+  lector.onerror = () => {
+    mostrarToast("No se pudo leer el archivo.", "error");
+    input.value = "";
+  };
+  lector.readAsText(f);
+}
+
+function elegirContactoVcard(idx) {
+  if (idx === "" || idx === null || idx === undefined) return;
+  const c = _contactosVcard[Number(idx)];
+  if (!c) return;
+  rellenarClienteDesdeContacto(c.nombre === "(Sin nombre)" ? "" : c.nombre, c.tel);
 }
 
 function cerrarModalCliente() {
@@ -2184,6 +2756,14 @@ function describirAccionSyncPreventa(accion, datos) {
       return "Actualizando puntos de cliente...";
     case "eliminarPedido":
       return "Eliminando pedido (" + (datos.id || '') + ")...";
+    case "registrarApartado":
+      return (datos.apartado && datos.apartado.id) ? ("Registrando apartado (" + datos.apartado.id + ")...") : "Registrando apartado...";
+    case "abonarApartado":
+      return (datos.idApartado) ? ("Enviando abono a apartado (" + datos.idApartado + ")...") : "Enviando abono a apartado...";
+    case "entregarApartado":
+      return (datos.idApartado) ? ("Marcando apartado como entregado (" + datos.idApartado + ")...") : "Marcando apartado entregado...";
+    case "cancelarApartado":
+      return (datos.idApartado) ? ("Cancelando apartado (" + datos.idApartado + ")...") : "Cancelando apartado...";
     default:
       return "Enviando " + accion + "...";
   }
@@ -2206,8 +2786,11 @@ function encolarAccionSync(accion, datos) {
   }
 }
 
+let procesandoColaSync = false;
 async function procesarColaSync() {
+  if (procesandoColaSync) return;
   if (!navigator.onLine || !state.config.sheetsUrl || !state.colaOffline || state.colaOffline.length === 0) return;
+  procesandoColaSync = true;
 
   const total = state.colaOffline.length;
   let procesados = 0;
@@ -2229,6 +2812,7 @@ async function procesarColaSync() {
         headers: { "Content-Type": "text/plain;charset=utf-8" },
         body: JSON.stringify(payload)
       });
+      if (!res.ok) throw new Error("HTTP " + res.status);
       const json = await res.json();
 
       if (json && json.success) {
@@ -2236,14 +2820,18 @@ async function procesarColaSync() {
         guardarColaLocal();
         actualizarBadgeCola();
       } else {
+        const detalle = (json && json.error) ? json.error : "respuesta no exitosa del servidor";
         console.warn("Respuesta no exitosa al enviar:", item, json);
+        mostrarToast(`⚠️ No se pudo subir ${item.accion}: ${String(detalle).slice(0, 120)}`, "error");
         break;
       }
     } catch (e) {
       console.warn("Fallo de red al procesar cola:", e);
+      mostrarToast(`⚠️ Sin conexión o error al subir ${item.accion}. Queda en cola (${state.colaOffline.length}).`, "error");
       break;
     }
   }
+  procesandoColaSync = false;
 }
 
 async function sincronizarConSheets(mostrarMensaje = true) {
@@ -2357,7 +2945,7 @@ async function sincronizarConSheets(mostrarMensaje = true) {
         if (json.data.pedidos && Array.isArray(json.data.pedidos)) {
           json.data.pedidos.forEach(p => {
             const pVend = String(p.vendedor || "").trim().toLowerCase();
-            if (p && p.id && (pVend === miVend || miVend === "colaborador" || pVend.includes(miVend) || miVend.includes(pVend))) {
+            if (p && p.id && miVend !== "colaborador" && pVend === miVend) {
               misPedidosIds.add(String(p.id).trim().toLowerCase());
               if (p.cliente) misClientesPedidos.add(String(p.cliente).trim().toLowerCase());
             }
@@ -2376,9 +2964,10 @@ async function sincronizarConSheets(mostrarMensaje = true) {
           const vCliente = String(v.cliente || "").trim().toLowerCase();
 
           // Comprobar si pertenece a este vendedor preventa por cualquiera de estas vías:
-          const coincideVendedorOrigen = !!origVend && (origVend === miVend || origVend.includes(miVend) || miVend.includes(origVend));
+          // Comparación estricta (normalizada): solo lo realizado por este preventa
+          const coincideVendedorOrigen = !!origVend && origVend === miVend;
           const coincidePedidoOrigenId = !!pedId && misPedidosIds.has(pedId);
-          const coincideVendedorDirecto = !origVend && !pedId && (vVend === miVend || vVend.includes(miVend) || miVend.includes(vVend));
+          const coincideVendedorDirecto = !origVend && !pedId && vVend === miVend;
           
           // 4. Algún pedido de este preventa tiene vinculado el ID de esta factura
           let coincidePorIdFacturaEnPedido = false;
@@ -2572,6 +3161,44 @@ async function sincronizarConSheets(mostrarMensaje = true) {
         guardarStockLocal();
       }
 
+      // H. Apartados y Abonos de Apartados
+      if (json.data.apartados !== undefined) {
+        const miVend = String(state.vendedor || "Colaborador").trim().toLowerCase();
+        const rawApartados = Array.isArray(json.data.apartados) ? json.data.apartados : [];
+        const misApartadosServidor = rawApartados.filter(a => {
+          const v = String(a.vendedor || "").trim().toLowerCase();
+          return miVend !== "colaborador" && v === miVend;
+        });
+
+        // Mantener apartados en cola offline que aún no han subido
+        const idsSheets = new Set(misApartadosServidor.map(a => String(a.id || "").trim()));
+        const apartadosPendientesOffline = (state.colaOffline || [])
+          .filter(item => item.accion === "registrarApartado" && item.datos && item.datos.apartado)
+          .map(item => item.datos.apartado)
+          .filter(a => !idsSheets.has(String(a.id || "").trim()));
+
+        state.misApartados = [...misApartadosServidor, ...apartadosPendientesOffline];
+        guardarApartadosLocal();
+      }
+
+      if (json.data.abonosApartados !== undefined) {
+        const rawAbonos = Array.isArray(json.data.abonosApartados) ? json.data.abonosApartados : [];
+        const misApartadosIds = new Set((state.misApartados || []).map(a => String(a.id || "").trim().toUpperCase()));
+        
+        // Guardar abonos de mis apartados
+        state.misAbonosApartados = rawAbonos.filter(ab => misApartadosIds.has(String(ab.idApartado || "").trim().toUpperCase()));
+        
+        // Asociar abonos a cada apartado en memoria si no venían incrustados
+        state.misApartados.forEach(a => {
+          const abonosDeEste = state.misAbonosApartados.filter(ab => String(ab.idApartado || "").trim().toUpperCase() === String(a.id || "").trim().toUpperCase());
+          if (abonosDeEste.length > 0) {
+            a.abonos = abonosDeEste;
+          }
+        });
+
+        guardarApartadosLocal();
+      }
+
       renderizarTodo();
       if (mostrarMensaje) {
         mostrarToast(`Sincronización completada (${state.productos.length} licores)`, "success");
@@ -2586,4 +3213,588 @@ async function sincronizarConSheets(mostrarMensaje = true) {
     if (icon) icon.classList.remove("animate-spin");
     ocultarBloqueoSincronizacion();
   }
+}
+
+// ==========================================================================
+// MÓDULO DE APARTADOS (PREVENTA)
+// ==========================================================================
+function renderizarModuloApartados() {
+  const cont = document.getElementById("misApartadosList");
+  const countActivosBadge = document.getElementById("apartadosActivosCount");
+  const saldoPendienteBadge = document.getElementById("apartadosSaldoPendienteCRC");
+  const totalAbonadoBadge = document.getElementById("apartadosTotalAbonadoCRC");
+  if (!cont) return;
+
+  const lista = state.misApartados || [];
+  const q = String(state.busquedaApartados || "").trim().toLowerCase();
+  const filtroEstado = String(state.filtroEstadoApartados || "activos").trim().toLowerCase();
+
+  // 1. Métricas globales de mis apartados
+  let activosCount = 0;
+  let saldoPendienteActivosCRC = 0;
+  let totalAbonadoGlobalCRC = 0;
+
+  lista.forEach(a => {
+    const est = String(a.estado || "Activo").trim();
+    const sal = parseNum(a.saldoPendienteCRC, 0);
+    const abo = parseNum(a.totalAbonadoCRC, 0);
+    totalAbonadoGlobalCRC += abo;
+
+    if (est === "Activo") {
+      activosCount++;
+      saldoPendienteActivosCRC += sal;
+    }
+  });
+
+  if (countActivosBadge) countActivosBadge.textContent = activosCount;
+  if (saldoPendienteBadge) saldoPendienteBadge.textContent = fmtCRC(saldoPendienteActivosCRC);
+  if (totalAbonadoBadge) totalAbonadoBadge.textContent = fmtCRC(totalAbonadoGlobalCRC);
+
+  // Badge en el navbar inferior
+  const navBadge = document.getElementById("navApartadosBadge");
+  if (navBadge) {
+    if (activosCount > 0) navBadge.classList.remove("hidden");
+    else navBadge.classList.add("hidden");
+  }
+
+  // 2. Actualizar botones de filtro
+  ["activos", "liquidados", "entregados", "todos"].forEach(f => {
+    const btn = document.getElementById("filtroAptEstado-" + f);
+    if (btn) {
+      if (f === filtroEstado) {
+        btn.className = "px-3 py-1 rounded-xl font-bold text-[11px] bg-blue-600 text-white transition-all active:scale-95 shrink-0 shadow-sm";
+      } else {
+        btn.className = "px-3 py-1 rounded-xl font-bold text-[11px] bg-slate-800 text-slate-300 hover:text-white transition-all active:scale-95 shrink-0";
+      }
+    }
+  });
+
+  // 3. Filtrar según estado y búsqueda (solo apartados de este preventa)
+  const miVendRender = String(state.vendedor || "Colaborador").trim().toLowerCase();
+  let filtrados = lista.filter(a => {
+    if (String(a.vendedor || "").trim().toLowerCase() !== miVendRender) return false;
+    const est = String(a.estado || "Activo").trim().toLowerCase();
+
+    if (filtroEstado === "activos" && est !== "activo") return false;
+    if (filtroEstado === "liquidados" && est !== "liquidado") return false;
+    if (filtroEstado === "entregados" && est !== "entregado") return false;
+
+    if (q) {
+      const matchId = String(a.id || "").toLowerCase().includes(q);
+      const matchCli = String(a.cliente || "").toLowerCase().includes(q);
+      const matchTel = String(a.clienteTelefono || "").toLowerCase().includes(q);
+      const matchVend = String(a.vendedor || "").toLowerCase().includes(q);
+      const matchNotas = String(a.notas || "").toLowerCase().includes(q);
+      const matchItems = (a.items || []).some(i => 
+        String(i.nombre || "").toLowerCase().includes(q) || 
+        String(i.codigo || "").toLowerCase().includes(q)
+      );
+      if (!matchId && !matchCli && !matchTel && !matchVend && !matchNotas && !matchItems) return false;
+    }
+
+    return true;
+  });
+
+  if (filtrados.length === 0) {
+    cont.innerHTML = `
+      <div class="text-center py-10 text-slate-500 bg-slate-900/60 rounded-3xl border border-slate-800 space-y-2.5">
+        <div class="w-12 h-12 mx-auto rounded-2xl bg-slate-800 flex items-center justify-center text-slate-500">
+          <i data-lucide="bookmark-x" class="w-6 h-6 stroke-1"></i>
+        </div>
+        <p class="text-xs font-bold text-slate-300">${q ? "No se encontraron apartados con ese criterio." : "No hay apartados en esta sección."}</p>
+        <p class="text-[11px] text-slate-500 max-w-xs mx-auto">Puedes registrar un nuevo apartado seleccionando la opción 'Apartado' en la pestaña de Pedidos.</p>
+        <div class="pt-1">
+          <button onclick="cambiarModoPedido('apartado'); cambiarVista('pedidos');" class="px-3.5 py-1.5 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-xl text-xs inline-flex items-center gap-1.5 active:scale-95 transition-all shadow-md">
+            <i data-lucide="plus" class="w-3.5 h-3.5"></i>
+            <span>Crear Nuevo Apartado</span>
+          </button>
+        </div>
+      </div>
+    `;
+    inicializarIconos();
+    return;
+  }
+
+  cont.innerHTML = filtrados.map(a => {
+    const est = String(a.estado || "Activo").trim();
+    const fStr = a.fecha ? new Date(a.fecha).toLocaleString([], { dateStyle: 'short', timeStyle: 'short' }) : "S/F";
+    const totalCRC = parseNum(a.montoTotalCRC, 0);
+    const abonadoCRC = parseNum(a.totalAbonadoCRC, 0);
+    const saldoCRC = parseNum(a.saldoPendienteCRC, 0);
+    const items = a.items || [];
+    const abonos = a.abonos || [];
+
+    let badgeEstado = "bg-blue-950/80 text-blue-300 border-blue-500/40";
+    let iconEstado = "clock";
+    let labelEstado = "Activo (En Proceso)";
+
+    if (est === "Liquidado") {
+      badgeEstado = "bg-emerald-950/80 text-emerald-300 border-emerald-500/40";
+      iconEstado = "check-circle";
+      labelEstado = "Liquidado (₡0 - Listo)";
+    } else if (est === "Entregado") {
+      badgeEstado = "bg-purple-950/80 text-purple-300 border-purple-500/40";
+      iconEstado = "package-check";
+      labelEstado = "Entregado al Cliente";
+    } else if (est === "Cancelado") {
+      badgeEstado = "bg-rose-950/80 text-rose-300 border-rose-500/40";
+      iconEstado = "x-circle";
+      labelEstado = "Cancelado";
+    }
+
+    // Progreso de pago
+    const pct = totalCRC > 0 ? Math.min(100, Math.round((abonadoCRC / totalCRC) * 100)) : 100;
+
+    return `
+      <div class="bg-slate-900/90 border border-slate-800 rounded-3xl p-4 shadow-xl space-y-3 transition-all hover:border-slate-700">
+        <!-- Encabezado de la tarjeta -->
+        <div class="flex items-start justify-between gap-2 border-b border-slate-800 pb-2.5">
+          <div>
+            <div class="flex items-center gap-2 flex-wrap">
+              <span class="font-mono font-black text-white text-sm tracking-wide">${a.id}</span>
+              <span class="px-2 py-0.5 rounded-full border text-[10px] font-bold uppercase flex items-center gap-1 ${badgeEstado}">
+                <i data-lucide="${iconEstado}" class="w-3 h-3"></i>
+                <span>${labelEstado}</span>
+              </span>
+            </div>
+            <div class="text-[11px] text-slate-400 font-sans mt-0.5 flex items-center gap-1.5 flex-wrap">
+              <span>📅 ${fStr}</span>
+              <span>•</span>
+              <span>👤 Vend: <b class="text-slate-300">${a.vendedor || "Carlos"}</b></span>
+              ${a.fechaVencimiento ? `<span>•</span><span class="text-amber-300 font-medium">⏳ Límite: ${a.fechaVencimiento}</span>` : ''}
+            </div>
+          </div>
+          <div class="text-right font-mono shrink-0">
+            <span class="text-xs text-slate-400 block font-sans">Total</span>
+            <span class="text-base font-black text-white">${fmtCRC(totalCRC)}</span>
+          </div>
+        </div>
+
+        <!-- Información del Cliente -->
+        <div class="p-2.5 bg-slate-950/80 rounded-2xl border border-slate-800/80 flex items-center justify-between text-xs">
+          <div class="flex items-center gap-2">
+            <div class="p-1.5 rounded-xl bg-blue-500/20 text-blue-400">
+              <i data-lucide="user" class="w-4 h-4"></i>
+            </div>
+            <div>
+              <span class="font-bold text-white block leading-tight">${a.cliente || "Cliente General"}</span>
+              ${a.clienteTelefono ? `<span class="text-[10px] text-slate-400 font-mono">📱 ${a.clienteTelefono}</span>` : '<span class="text-[10px] text-slate-500">Sin teléfono</span>'}
+            </div>
+          </div>
+          ${a.clienteTelefono ? `
+            <a href="https://wa.me/506${String(a.clienteTelefono).replace(/\\D/g, '').replace(/^506/, '')}" target="_blank"
+              class="px-2 py-1 bg-emerald-950/80 hover:bg-emerald-900 border border-emerald-500/30 text-emerald-300 rounded-xl font-bold text-[10px] flex items-center gap-1 transition-all">
+              <i data-lucide="message-circle" class="w-3 h-3"></i>
+              <span>Chat</span>
+            </a>
+          ` : ''}
+        </div>
+
+        <!-- Lista de Productos Apartados -->
+        <div class="space-y-1.5">
+          <span class="text-[10px] uppercase font-bold text-slate-400 tracking-wider block">Productos Apartados (${items.length}):</span>
+          <div class="space-y-1 max-h-36 overflow-y-auto pr-1">
+            ${items.map(it => `
+              <div class="p-2 bg-slate-950/60 rounded-xl border border-slate-800/60 flex items-center justify-between text-xs font-mono">
+                <div class="flex items-center gap-2 min-w-0 flex-1 font-sans">
+                  <span class="font-black text-amber-400 shrink-0">${it.cantidad}x</span>
+                  <span class="text-white truncate">${it.nombre || it.codigo}</span>
+                </div>
+                <span class="font-bold text-slate-300 font-mono text-[11px] shrink-0 ml-2">
+                  ${fmtCRC(it.subtotalCRC || (it.cantidad * (it.precioVentaCRC || 0)))}
+                </span>
+              </div>
+            `).join("")}
+          </div>
+        </div>
+
+        <!-- Barra de Progreso y Saldos -->
+        <div class="p-3 bg-slate-950/90 rounded-2xl border border-slate-800 space-y-2">
+          <div class="flex items-center justify-between text-xs font-mono">
+            <div>
+              <span class="text-[10px] text-slate-400 font-sans block">Abonado (${pct}%)</span>
+              <span class="font-bold text-emerald-400">${fmtCRC(abonadoCRC)}</span>
+            </div>
+            <div class="text-right">
+              <span class="text-[10px] text-slate-400 font-sans block">Saldo Pendiente</span>
+              <span class="font-black ${saldoCRC <= 0 ? 'text-emerald-400' : 'text-amber-400'}">${fmtCRC(saldoCRC)}</span>
+            </div>
+          </div>
+          <!-- Barra gráfica -->
+          <div class="w-full h-2 bg-slate-800 rounded-full overflow-hidden">
+            <div class="h-full bg-gradient-to-r ${saldoCRC <= 0 ? 'from-emerald-500 to-teal-400' : 'from-blue-500 to-indigo-500'} transition-all duration-500" style="width: ${pct}%"></div>
+          </div>
+        </div>
+
+        <!-- Historial de Abonos (si tiene) -->
+        ${abonos && abonos.length > 0 ? `
+          <div class="p-2.5 bg-slate-950/60 rounded-2xl border border-slate-800/60 space-y-1.5">
+            <span class="text-[10px] uppercase font-bold text-slate-400 tracking-wider block">Historial de Abonos (${abonos.length}):</span>
+            <div class="space-y-1 text-[11px] max-h-28 overflow-y-auto pr-1">
+              ${abonos.map(ab => `
+                <div class="flex items-center justify-between p-1.5 bg-slate-900 rounded-lg text-slate-300 font-mono">
+                  <div class="font-sans flex items-center gap-1.5">
+                    <i data-lucide="check" class="w-3 h-3 text-emerald-400 shrink-0"></i>
+                    <span>${ab.fecha ? ab.fecha.slice(0, 16) : ''} (${ab.recibidoPor || state.vendedor})</span>
+                    <span class="text-[10px] text-slate-500 font-mono">[${ab.metodoPago || 'Efectivo'}]</span>
+                  </div>
+                  <span class="font-bold text-emerald-400 font-mono">+${fmtCRC(ab.montoCRC || 0)}</span>
+                </div>
+              `).join("")}
+            </div>
+          </div>
+        ` : ''}
+
+        ${a.notas ? `<p class="text-[10.5px] text-slate-400 italic bg-slate-950/40 p-2 rounded-xl border border-slate-800/40">📝 ${a.notas}</p>` : ''}
+
+        <!-- Botones de Acción -->
+        <div class="pt-1 flex items-center justify-end gap-2 flex-wrap">
+          <!-- WhatsApp Reenviar / Compartir -->
+          <button onclick="compartirApartadoWhatsApp('${a.id}')" title="Enviar estado por WhatsApp"
+            class="px-2.5 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-xl active:scale-95 transition-all flex items-center gap-1.5 shadow-md shadow-emerald-600/30 text-xs">
+            <i data-lucide="message-circle" class="w-3.5 h-3.5"></i>
+            <span>WhatsApp</span>
+          </button>
+
+          <!-- Descargar Ticket -->
+          <button onclick="imprimirTicketApartado('${a.id}')" title="Descargar comprobante en texto"
+            class="px-2.5 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold rounded-xl active:scale-95 transition-all flex items-center gap-1 text-xs">
+            <i data-lucide="file-text" class="w-3.5 h-3.5"></i>
+            <span>Ticket</span>
+          </button>
+
+          <!-- Botón de Abono (si está Activo y con saldo > 0) -->
+          ${est === "Activo" && saldoCRC > 0 ? `
+            <button onclick="abrirModalAbonoApartado('${a.id}')"
+              class="px-3 py-1.5 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-black rounded-xl active:scale-95 transition-all flex items-center gap-1.5 shadow-md shadow-blue-500/25 text-xs">
+              <i data-lucide="hand-coins" class="w-3.5 h-3.5"></i>
+              <span>+ Abonar</span>
+            </button>
+          ` : ''}
+
+          <!-- Botón Entregar (si está Liquidado o si se decide entregar) -->
+          ${est === "Liquidado" || (est === "Activo" && saldoCRC <= 0) ? `
+            <button onclick="entregarApartadoConfirmar('${a.id}')"
+              class="px-3 py-1.5 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-black rounded-xl active:scale-95 transition-all flex items-center gap-1.5 shadow-md shadow-emerald-500/25 text-xs">
+              <i data-lucide="package-check" class="w-3.5 h-3.5"></i>
+              <span>Entregar</span>
+            </button>
+          ` : ''}
+
+          <!-- Cancelar Apartado (solo si no está Entregado ni Cancelado) -->
+          ${est !== "Entregado" && est !== "Cancelado" ? `
+            <button onclick="cancelarApartadoConfirmar('${a.id}')" title="Cancelar apartado y liberar stock"
+              class="px-2.5 py-1.5 bg-rose-950/60 hover:bg-rose-900 border border-rose-500/30 text-rose-300 font-bold rounded-xl active:scale-95 transition-all flex items-center gap-1 text-xs">
+              <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+              <span>Cancelar</span>
+            </button>
+          ` : ''}
+        </div>
+      </div>
+    `;
+  }).join("");
+
+  inicializarIconos();
+}
+
+function filtrarApartadosUI() {
+  const input = document.getElementById("searchApartadosInput");
+  state.busquedaApartados = input ? input.value : "";
+  renderizarModuloApartados();
+}
+
+function cambiarFiltroEstadoApartados(estado) {
+  state.filtroEstadoApartados = estado || "activos";
+  renderizarModuloApartados();
+}
+
+function abrirModalAbonoApartado(idApartado) {
+  const a = (state.misApartados || []).find(it => String(it.id).trim() === String(idApartado).trim());
+  if (!a) {
+    mostrarToast("Apartado no encontrado.", "error");
+    return;
+  }
+
+  const modal = document.getElementById("modalRegistrarAbonoApartado");
+  const subEl = document.getElementById("modalAbonoApartadoSubtitulo");
+  const idEl = document.getElementById("modalAbonoIdApartado");
+  const totalEl = document.getElementById("modalAbonoTotalCRC");
+  const saldoEl = document.getElementById("modalAbonoSaldoCRC");
+  const montoInput = document.getElementById("inputMontoAbonoCRC");
+  const notasInput = document.getElementById("inputNotasAbono");
+
+  if (idEl) idEl.value = a.id;
+  if (subEl) subEl.textContent = `${a.id} • ${a.cliente || 'Cliente General'}`;
+  if (totalEl) totalEl.textContent = fmtCRC(a.montoTotalCRC);
+  if (saldoEl) saldoEl.textContent = fmtCRC(a.saldoPendienteCRC);
+  if (montoInput) {
+    montoInput.value = "";
+    montoInput.max = a.saldoPendienteCRC;
+    montoInput.placeholder = `Hasta ${fmtCRC(a.saldoPendienteCRC)}`;
+  }
+  if (notasInput) notasInput.value = "";
+
+  if (modal) {
+    modal.classList.remove("hidden");
+    modal.classList.add("flex");
+  }
+  inicializarIconos();
+  if (montoInput) setTimeout(() => montoInput.focus(), 150);
+}
+
+function cerrarModalAbonoApartado() {
+  const modal = document.getElementById("modalRegistrarAbonoApartado");
+  if (modal) {
+    modal.classList.add("hidden");
+    modal.classList.remove("flex");
+  }
+}
+
+function guardarNuevoAbonoApartado() {
+  const idApartado = document.getElementById("modalAbonoIdApartado")?.value;
+  const a = (state.misApartados || []).find(it => String(it.id).trim() === String(idApartado).trim());
+  if (!a) {
+    mostrarToast("Apartado no encontrado.", "error");
+    return;
+  }
+
+  const montoInput = document.getElementById("inputMontoAbonoCRC");
+  const montoCRC = Math.max(0, Number(montoInput ? montoInput.value : 0) || 0);
+
+  if (montoCRC <= 0) {
+    mostrarToast("Ingresa un monto válido mayor a 0.", "error");
+    return;
+  }
+
+  if (montoCRC > Number(a.saldoPendienteCRC)) {
+    mostrarToast(`El monto no puede superar el saldo pendiente (${fmtCRC(a.saldoPendienteCRC)}).`, "error");
+    return;
+  }
+
+  const tc = Number(state.config.tipoCambio) || 500;
+  const montoUSD = montoCRC / tc;
+  const metodoPago = document.getElementById("selectMetodoPagoAbono")?.value || "Efectivo";
+  const recibidoPor = state.vendedor || "Colaborador";
+  const notas = document.getElementById("inputNotasAbono")?.value?.trim() || "";
+
+  const idAbono = "ABO-" + Date.now().toString().slice(-6);
+  const fechaISO = new Date().toISOString();
+
+  // Actualizar apartado en memoria
+  a.totalAbonadoCRC = (parseNum(a.totalAbonadoCRC, 0)) + montoCRC;
+  a.totalAbonadoUSD = (parseNum(a.totalAbonadoUSD, 0)) + montoUSD;
+  a.saldoPendienteCRC = Math.max(0, (parseNum(a.montoTotalCRC, 0)) - a.totalAbonadoCRC);
+  a.saldoPendienteUSD = Math.max(0, (parseNum(a.montoTotalUSD, 0)) - a.totalAbonadoUSD);
+  if (a.saldoPendienteCRC <= 0) {
+    a.estado = "Liquidado";
+  }
+
+  const abonoObj = {
+    id: idAbono,
+    fecha: fechaISO,
+    idApartado: a.id,
+    cliente: a.cliente,
+    telefono: a.clienteTelefono || "",
+    montoCRC: montoCRC,
+    montoUSD: montoUSD,
+    metodoPago: metodoPago,
+    saldoRestanteCRC: a.saldoPendienteCRC,
+    saldoRestanteUSD: a.saldoPendienteUSD,
+    recibidoPor: recibidoPor,
+    notas: notas || "Abono a apartado"
+  };
+
+  if (!a.abonos) a.abonos = [];
+  a.abonos.push(abonoObj);
+
+  if (!state.misAbonosApartados) state.misAbonosApartados = [];
+  state.misAbonosApartados.unshift(abonoObj);
+
+  guardarApartadosLocal();
+
+  // Encolar acción para sincronizar con Google Sheets
+  encolarAccionSync("abonarApartado", {
+    idApartado: a.id,
+    abono: abonoObj
+  });
+
+  cerrarModalAbonoApartado();
+  renderizarTodo();
+
+  mostrarToast(`✅ Abono de ${fmtCRC(montoCRC)} registrado para ${a.cliente}. Saldo restante: ${fmtCRC(a.saldoPendienteCRC)}`, "success");
+
+  // Compartir comprobante por WhatsApp
+  compartirApartadoWhatsApp(a.id);
+}
+
+function entregarApartadoConfirmar(idApartado) {
+  const a = (state.misApartados || []).find(it => String(it.id).trim() === String(idApartado).trim());
+  if (!a) return;
+
+  if (Number(a.saldoPendienteCRC) > 0) {
+    if (!confirm(`⚠️ Este apartado aún tiene un saldo pendiente de ${fmtCRC(a.saldoPendienteCRC)}. ¿Deseas marcarlo como ENTREGADO de todos modos?`)) {
+      return;
+    }
+  } else {
+    if (!confirm(`¿Confirmar entrega de las botellas del apartado ${a.id} a ${a.cliente}?`)) {
+      return;
+    }
+  }
+
+  a.estado = "Entregado";
+  a.fechaEntrega = new Date().toISOString();
+  guardarApartadosLocal();
+
+  encolarAccionSync("entregarApartado", {
+    idApartado: a.id,
+    entregadoPor: state.vendedor || "Colaborador"
+  });
+
+  renderizarTodo();
+  mostrarToast(`📦 Apartado ${a.id} marcado como ENTREGADO con éxito.`, "success");
+}
+
+function cancelarApartadoConfirmar(idApartado) {
+  const a = (state.misApartados || []).find(it => String(it.id).trim() === String(idApartado).trim());
+  if (!a) return;
+
+  const motivo = prompt(`¿Motivo de la cancelación del apartado ${a.id} (${a.cliente})?\n\nAl cancelar, las botellas reservadas volverán a estar disponibles en inventario:`);
+  if (motivo === null) return;
+
+  a.estado = "Cancelado";
+  a.notas = `${a.notas ? a.notas + ' ' : ''}[CANCELADO: ${motivo.trim() || 'Sin motivo especificado'}]`;
+  guardarApartadosLocal();
+
+  encolarAccionSync("cancelarApartado", {
+    idApartado: a.id,
+    motivo: motivo.trim() || "Cancelado por el usuario",
+    canceladoPor: state.vendedor || "Colaborador"
+  });
+
+  renderizarTodo();
+  mostrarToast(`↩ Apartado ${a.id} cancelado.`, "info");
+}
+
+function compartirApartadoWhatsApp(idApartado) {
+  const a = (state.misApartados || []).find(it => String(it.id).trim() === String(idApartado).trim());
+  if (!a) {
+    mostrarToast("Apartado no encontrado.", "error");
+    return;
+  }
+
+  const negocio = "DC EL DESTAPE LICORES";
+  const telefonoNegocio = "+506 8992-7936";
+  const fecha = a.fecha ? new Date(a.fecha).toLocaleString([], { dateStyle: 'short', timeStyle: 'short' }) : new Date().toLocaleString();
+
+  let texto = `🍷 *${negocio.toUpperCase()}* 🍷\n`;
+  texto += `📱 *Tel:* ${telefonoNegocio}\n`;
+  texto += `--------------------------------\n`;
+  texto += `🔖 *COMPROBANTE DE APARTADO*\n`;
+  texto += `📅 Fecha: ${fecha}\n`;
+  texto += `🎫 N° Apartado: *${a.id}*\n`;
+  texto += `👤 Cliente: *${a.cliente || "Cliente General"}*\n`;
+  texto += `👤 Atendido por: ${a.vendedor || state.vendedor || "Colaborador"}\n`;
+  if (a.fechaVencimiento) {
+    texto += `⏳ Fecha límite de retiro: *${a.fechaVencimiento}*\n`;
+  }
+  texto += `--------------------------------\n`;
+  texto += `📦 *PRODUCTOS RESERVADOS:*\n`;
+
+  (a.items || []).forEach(i => {
+    const cant = parseNum(i.cantidad, 1);
+    const subCRC = parseNum(i.subtotalCRC, cant * parseNum(i.precioVentaCRC, 0));
+    texto += `• ${cant}x ${i.nombre || i.codigo} = ${fmtCRC(subCRC)}\n`;
+  });
+
+  texto += `--------------------------------\n`;
+  texto += `💵 *Total Apartado:* ${fmtCRC(a.montoTotalCRC)}\n`;
+  texto += `💰 *Total Abonado:* ${fmtCRC(a.totalAbonadoCRC)}\n`;
+  texto += `⚠️ *SALDO PENDIENTE:* *${fmtCRC(a.saldoPendienteCRC)}*\n`;
+  
+  const est = String(a.estado || "Activo").trim();
+  if (est === "Liquidado" || parseNum(a.saldoPendienteCRC, 0) <= 0) {
+    texto += `\n🎉 *¡APARTADO LIQUIDADO AL 100%!* Listo para retiro/entrega. ✅\n`;
+  } else {
+    texto += `\n🔒 _Mercadería reservada y apartada exclusivamente para usted._\n`;
+  }
+
+  if (a.abonos && a.abonos.length > 0) {
+    texto += `\n📋 *Últimos abonos registrados:*\n`;
+    a.abonos.slice(-3).forEach(ab => {
+      texto += `  - ${ab.fecha ? ab.fecha.slice(0, 10) : ''}: +${fmtCRC(ab.montoCRC || 0)} (${ab.metodoPago || 'Efectivo'})\n`;
+    });
+  }
+
+  texto += `\n¡Muchas gracias por su preferencia! 🍷\n\n`;
+  texto += `📱 *Redes sociales:*\n`;
+  texto += `📷 Instagram: https://www.instagram.com/dceldestape\n`;
+  texto += `🔵 Facebook: https://www.facebook.com/share/1CHT3FRSc6/`;
+
+  let telDestino = "";
+  if (a.clienteTelefono) {
+    telDestino = String(a.clienteTelefono).replace(/\\D/g, "").replace(/^506/, "");
+  }
+
+  const encoded = encodeURIComponent(texto);
+  const waUrl = telDestino
+    ? `https://wa.me/506${telDestino}?text=${encoded}`
+    : `https://wa.me/?text=${encoded}`;
+
+  window.open(waUrl, "_blank");
+}
+
+function imprimirTicketApartado(idApartado) {
+  const a = (state.misApartados || []).find(it => String(it.id).trim() === String(idApartado).trim());
+  if (!a) {
+    mostrarToast("Apartado no encontrado.", "error");
+    return;
+  }
+
+  const negocio = "DC EL DESTAPE LICORES";
+  const telefono = "+506 8992-7936";
+  const fecha = a.fecha ? new Date(a.fecha).toLocaleString([], { dateStyle: 'short', timeStyle: 'short' }) : new Date().toLocaleString();
+
+  let lines = [
+    "==========================================",
+    `        ${negocio.toUpperCase()}`,
+    `         Tel: ${telefono}`,
+    "==========================================",
+    `COMPROBANTE DE APARTADO: ${a.id}`,
+    `Fecha: ${fecha}`,
+    `Atendido por: ${a.vendedor || state.vendedor || "Colaborador"}`,
+    `Cliente: ${a.cliente || "Cliente General"}`,
+    a.clienteTelefono ? `Teléfono: ${a.clienteTelefono}` : "",
+    a.fechaVencimiento ? `Fecha límite: ${a.fechaVencimiento}` : "",
+    "------------------------------------------",
+    "CANT  PRODUCTO                    TOTAL",
+    "------------------------------------------"
+  ].filter(Boolean);
+
+  (a.items || []).forEach(i => {
+    const cant = `${i.cantidad}x`.padEnd(5);
+    const nom = (i.nombre || i.codigo || "").slice(0, 22).padEnd(23);
+    const sub = fmtCRC(i.subtotalCRC || (i.cantidad * (i.precioVentaCRC || 0)));
+    lines.push(`${cant} ${nom} ${sub}`);
+  });
+
+  lines.push("------------------------------------------");
+  lines.push(`TOTAL APARTADO:   ${fmtCRC(a.montoTotalCRC)}`);
+  lines.push(`TOTAL ABONADO:    ${fmtCRC(a.totalAbonadoCRC)}`);
+  lines.push(`SALDO PENDIENTE:  ${fmtCRC(a.saldoPendienteCRC)}`);
+  lines.push(`ESTADO:           ${a.estado || "Activo"}`);
+  lines.push("==========================================");
+  lines.push("   ¡Mercadería reservada con éxito!");
+  lines.push("==========================================");
+
+  const textContent = lines.join("\r\n");
+  const blob = new Blob([textContent], { type: "text/plain;charset=utf-8" });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = `Ticket-Apartado-${a.id}.txt`;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  URL.revokeObjectURL(url);
+  mostrarToast("Ticket descargado 📄", "success");
 }

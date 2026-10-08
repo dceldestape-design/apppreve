@@ -63,7 +63,7 @@
             <span id="headerVendedorNombre">Mi Perfil</span>
             <i data-lucide="chevron-down" class="w-3 h-3 text-amber-400/80"></i>
           </button>
-          <span class="text-[10px] text-slate-500 font-mono">| TC: ₡<span id="headerExchangeRate">520</span></span>
+          <span class="text-[10px] text-slate-500 font-mono">| TC: ₡<span id="headerExchangeRate">500</span></span>
         </div>
       </div>
     </div>
@@ -132,10 +132,17 @@
 
       <div class="flex items-center justify-between text-xs text-slate-400 px-1 font-mono">
         <span>Catálogo disponible: <b id="prodCount" class="text-amber-400">0</b> licores</span>
-        <button onclick="cambiarOrden()" class="flex items-center gap-1 hover:text-white font-medium text-[11px]">
-          <i data-lucide="arrow-up-down" class="w-3.5 h-3.5 text-slate-400"></i>
-          <span id="sortLabel">A-Z</span>
-        </button>
+        <div class="flex items-center gap-2">
+          <button onclick="abrirModalExportarCatalogo()" title="Compartir Lista de Precios por WhatsApp" 
+            class="px-2.5 py-1 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white rounded-xl active:scale-95 shadow-md shadow-emerald-600/25 transition-all flex items-center gap-1 font-bold text-xs">
+            <i data-lucide="share-2" class="w-3.5 h-3.5"></i>
+            <span>Compartir</span>
+          </button>
+          <button onclick="cambiarOrden()" class="flex items-center gap-1 hover:text-white font-medium text-[11px] py-1 px-1.5 rounded-lg bg-slate-900 border border-slate-800">
+            <i data-lucide="arrow-up-down" class="w-3.5 h-3.5 text-slate-400"></i>
+            <span id="sortLabel">A-Z</span>
+          </button>
+        </div>
       </div>
 
       <div id="productosList" class="space-y-2.5"></div>
@@ -144,14 +151,26 @@
     <!-- VIEW 2: PEDIDOS -->
     <section id="viewPedidos" class="space-y-4 hidden">
       <div class="bg-gradient-to-br from-slate-900 via-slate-850 to-slate-900 border border-amber-500/40 rounded-3xl p-4 shadow-xl space-y-3.5">
+        <!-- Selector Modo: Encargo / Pedido vs Apartado -->
+        <div class="grid grid-cols-2 gap-1 bg-slate-950/80 p-1 rounded-xl border border-slate-700/60 text-xs font-bold font-mono">
+          <button type="button" id="btnModoPedido" onclick="cambiarModoPedido('pedido')" class="py-2 rounded-lg bg-amber-500 text-slate-950 shadow-md flex items-center justify-center gap-1.5 active:scale-95 transition-all">
+            <i data-lucide="clipboard-list" class="w-3.5 h-3.5"></i>
+            <span>Encargo / Pedido</span>
+          </button>
+          <button type="button" id="btnModoApartado" onclick="cambiarModoPedido('apartado')" class="py-2 rounded-lg bg-transparent text-slate-400 hover:text-white flex items-center justify-center gap-1.5 active:scale-95 transition-all">
+            <i data-lucide="bookmark" class="w-3.5 h-3.5"></i>
+            <span>Apartado</span>
+          </button>
+        </div>
+
         <div class="flex items-center justify-between border-b border-slate-800 pb-2.5">
           <div class="flex items-center gap-2">
-            <div class="p-2 rounded-xl bg-amber-500/20 text-amber-400">
-              <i data-lucide="shopping-bag" class="w-4 h-4"></i>
+            <div class="p-2 rounded-xl bg-amber-500/20 text-amber-400" id="pedidoHeaderIconContainer">
+              <i data-lucide="shopping-bag" id="pedidoHeaderIcon" class="w-4 h-4"></i>
             </div>
             <div>
-              <h2 class="text-xs font-bold text-white uppercase tracking-wider">Nuevo Pedido / Encargo</h2>
-              <p class="text-[10px] text-slate-400">Para abastecer con la distribuidora</p>
+              <h2 class="text-xs font-bold text-white uppercase tracking-wider" id="pedidoHeaderTitulo">Nuevo Pedido / Encargo</h2>
+              <p class="text-[10px] text-slate-400" id="pedidoHeaderSubtitulo">Para abastecer con la distribuidora</p>
             </div>
           </div>
           <button type="button" onclick="vaciarCarritoPedido()" class="text-[11px] text-rose-400 hover:text-rose-300 font-semibold">Vaciar</button>
@@ -159,7 +178,7 @@
 
         <div class="space-y-1.5">
           <div class="flex items-center justify-between">
-            <label class="block text-xs font-semibold text-slate-300">Cliente del Pedido *</label>
+            <label class="block text-xs font-semibold text-slate-300" id="pedidoLabelCliente">Cliente del Pedido *</label>
             <button type="button" onclick="cambiarVista('clientes'); abrirModalNuevoCliente();" class="text-[11px] font-bold text-amber-400 hover:text-amber-300 flex items-center gap-1 bg-amber-500/15 hover:bg-amber-500/25 border border-amber-500/40 px-2.5 py-1 rounded-xl active:scale-95 transition-all shadow-sm">
               <i data-lucide="user-plus" class="w-3.5 h-3.5"></i>
               <span>+ Nuevo Cliente</span>
@@ -204,12 +223,70 @@
             <span class="text-sm font-bold text-amber-300" id="pedidoTotalUnidades">0 unids</span>
           </div>
           <div class="text-right">
-            <span class="text-[10px] text-slate-400 block font-sans">Monto Venta Estimado:</span>
+            <span class="text-[10px] text-slate-400 block font-sans" id="pedidoTotalLabel">Monto Venta Estimado:</span>
             <span class="text-base font-black text-emerald-400" id="pedidoTotalCRC">₡0</span>
           </div>
         </div>
 
-        <button onclick="guardarPedidoActual()" class="w-full py-3 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 font-black rounded-2xl shadow-lg shadow-amber-500/20 active:scale-95 transition-all flex items-center justify-center gap-2 text-xs uppercase tracking-wider">
+        <!-- Banner Opciones de Modo Apartado (Solo visible cuando se selecciona modo apartado) -->
+        <div id="pedidoBannerModoApartado" class="hidden pt-1 space-y-2.5">
+          <div class="bg-blue-950/40 border border-blue-500/40 rounded-2xl p-3 space-y-2.5">
+            <div class="flex items-center justify-between text-blue-300 text-xs font-bold border-b border-blue-500/20 pb-1.5">
+              <span class="flex items-center gap-1.5">
+                <i data-lucide="bookmark" class="w-4 h-4 text-blue-400"></i>
+                <span>Configuración de Apartado</span>
+              </span>
+              <span id="pedidoApartadoResumenBotellas" class="text-[11px] font-mono text-blue-200">0 botellas</span>
+            </div>
+
+            <!-- Total y Saldo Pendiente -->
+            <div class="grid grid-cols-2 gap-2 text-xs font-mono">
+              <div class="p-2 bg-slate-950 rounded-xl border border-slate-800">
+                <span class="text-[10px] text-slate-400 block font-bold font-sans">TOTAL APARTADO:</span>
+                <span id="pedidoApartadoTotalCRC" class="text-sm font-black text-white">₡0</span>
+              </div>
+              <div class="p-2 bg-slate-950 rounded-xl border border-slate-800">
+                <span class="text-[10px] text-slate-400 block font-bold font-sans">SALDO PENDIENTE:</span>
+                <span id="pedidoApartadoSaldoCRC" class="text-sm font-black text-amber-400">₡0</span>
+              </div>
+            </div>
+
+            <!-- Abono Inicial y Método de Pago -->
+            <div class="grid grid-cols-2 gap-2 text-xs">
+              <div>
+                <label for="pedidoApartadoAbonoCRC" class="text-[11px] text-slate-300 font-semibold block mb-1">Abono Inicial (₡):</label>
+                <input type="number" id="pedidoApartadoAbonoCRC" min="0" step="500" value="0" oninput="actualizarCalculoApartadoPreventaUI()" placeholder="₡0"
+                  class="w-full px-2.5 py-1.5 bg-slate-950 border border-slate-700 rounded-lg text-white font-mono font-bold text-xs focus:border-blue-400">
+              </div>
+              <div>
+                <label for="pedidoApartadoMetodoPago" class="text-[11px] text-slate-300 font-semibold block mb-1">Método de Pago:</label>
+                <select id="pedidoApartadoMetodoPago" class="w-full px-2 py-1.5 bg-slate-950 border border-slate-700 rounded-lg text-white font-semibold text-xs focus:border-blue-400">
+                  <option value="Efectivo">💵 Efectivo</option>
+                  <option value="SINPE / Transf.">📱 SINPE</option>
+                  <option value="Tarjeta">💳 Tarjeta</option>
+                </select>
+              </div>
+            </div>
+
+            <!-- Fecha límite / Notas -->
+            <div class="grid grid-cols-2 gap-2 text-xs">
+              <div>
+                <label for="pedidoApartadoFechaVenc" class="text-[10px] text-slate-400 block mb-0.5">Fecha límite retiro:</label>
+                <input type="date" id="pedidoApartadoFechaVenc" class="w-full px-2 py-1 bg-slate-950 border border-slate-700 rounded-lg text-white text-[11px] focus:border-blue-400">
+              </div>
+              <div>
+                <label for="pedidoApartadoNotas" class="text-[10px] text-slate-400 block mb-0.5">Notas / Referencia:</label>
+                <input type="text" id="pedidoApartadoNotas" placeholder="Opcional..." class="w-full px-2 py-1 bg-slate-950 border border-slate-700 rounded-lg text-white text-[11px] focus:border-blue-400">
+              </div>
+            </div>
+
+            <p class="text-[10.5px] text-blue-300/80 leading-tight">
+              🔒 La mercadería quedará reservada en el sistema para este cliente.
+            </p>
+          </div>
+        </div>
+
+        <button id="btnConfirmarPedido" onclick="guardarPedidoActual()" class="w-full py-3 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 font-black rounded-2xl shadow-lg shadow-amber-500/20 active:scale-95 transition-all flex items-center justify-center gap-2 text-xs uppercase tracking-wider">
           <i data-lucide="check-circle" class="w-4 h-4"></i>
           <span>Confirmar y Enviar Pedido</span>
         </button>
@@ -225,6 +302,82 @@
         </div>
 
         <div id="misPedidosList" class="space-y-2.5 max-h-[360px] overflow-y-auto"></div>
+      </div>
+    </section>
+
+    <!-- ============================================================== -->
+    <!-- VIEW: APARTADOS (RESERVA DE MERCADERÍA Y GESTIÓN DE ABONOS)     -->
+    <!-- ============================================================== -->
+    <section id="viewApartados" class="space-y-4 hidden">
+      <!-- Tarjeta Encabezado Principal -->
+      <div class="bg-gradient-to-br from-blue-950/80 via-slate-900 to-slate-950 border border-blue-500/40 rounded-3xl p-4 shadow-xl space-y-3">
+        <div class="flex items-center justify-between border-b border-blue-500/20 pb-2.5">
+          <div class="flex items-center gap-2">
+            <div class="p-2 rounded-xl bg-blue-500/20 text-blue-400">
+              <i data-lucide="bookmark" class="w-5 h-5"></i>
+            </div>
+            <div>
+              <h2 class="text-xs font-bold text-white uppercase tracking-wider">Mis Apartados</h2>
+              <p class="text-[10px] text-blue-300">Mercadería reservada y control de abonos</p>
+            </div>
+          </div>
+          <div class="flex items-center gap-1.5">
+            <button onclick="cambiarModoPedido('apartado'); cambiarVista('pedidos');" title="Crear nuevo apartado" class="px-2.5 py-1.5 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-xl text-xs active:scale-95 transition-all flex items-center gap-1 shadow-sm">
+              <i data-lucide="plus" class="w-3.5 h-3.5"></i>
+              <span>Nuevo</span>
+            </button>
+            <button onclick="sincronizarConSheets(true)" title="Sincronizar apartados con Sheets" class="p-1.5 bg-blue-500/20 hover:bg-blue-500/30 border border-blue-500/40 text-blue-300 rounded-xl text-xs active:scale-95 transition-all">
+              <i data-lucide="refresh-cw" class="w-3.5 h-3.5"></i>
+            </button>
+          </div>
+        </div>
+
+        <!-- Métricas Rápidas de Apartados -->
+        <div class="grid grid-cols-3 gap-2 text-center font-mono">
+          <div class="p-2 bg-slate-950/80 border border-slate-800 rounded-2xl">
+            <span class="text-[9.5px] text-slate-400 uppercase font-sans font-bold block">Activos</span>
+            <span id="apartadosActivosCount" class="text-sm font-black text-blue-400">0</span>
+          </div>
+          <div class="p-2 bg-slate-950/80 border border-slate-800 rounded-2xl">
+            <span class="text-[9.5px] text-slate-400 uppercase font-sans font-bold block">Por Cobrar</span>
+            <span id="apartadosSaldoPendienteCRC" class="text-xs font-black text-amber-400">₡0</span>
+          </div>
+          <div class="p-2 bg-slate-950/80 border border-slate-800 rounded-2xl">
+            <span class="text-[9.5px] text-slate-400 uppercase font-sans font-bold block">Abonado</span>
+            <span id="apartadosTotalAbonadoCRC" class="text-xs font-bold text-emerald-400">₡0</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Buscador y Filtros de Estado -->
+      <div class="bg-slate-900 border border-slate-800 rounded-3xl p-3.5 shadow-xl space-y-3">
+        <!-- Campo de búsqueda -->
+        <div class="relative">
+          <i data-lucide="search" class="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400"></i>
+          <input type="text" id="searchApartadosInput" oninput="filtrarApartadosUI()" placeholder="Buscar por cliente, teléfono o APT-..."
+            class="w-full pl-10 pr-4 py-2 bg-slate-950 border border-slate-800 rounded-2xl text-xs text-white placeholder-slate-500 focus:outline-none focus:border-blue-500 transition-all shadow-inner">
+        </div>
+
+        <!-- Filtros Rápidos por Estado -->
+        <div class="flex items-center gap-1.5 overflow-x-auto pb-0.5 text-xs font-mono">
+          <button type="button" id="filtroAptEstado-activos" onclick="cambiarFiltroEstadoApartados('activos')" class="px-3 py-1 rounded-xl font-bold text-[11px] bg-blue-600 text-white transition-all active:scale-95 shrink-0 shadow-sm">
+            Activos
+          </button>
+          <button type="button" id="filtroAptEstado-liquidados" onclick="cambiarFiltroEstadoApartados('liquidados')" class="px-3 py-1 rounded-xl font-bold text-[11px] bg-slate-800 text-slate-300 hover:text-white transition-all active:scale-95 shrink-0">
+            Liquidados (₡0)
+          </button>
+          <button type="button" id="filtroAptEstado-entregados" onclick="cambiarFiltroEstadoApartados('entregados')" class="px-3 py-1 rounded-xl font-bold text-[11px] bg-slate-800 text-slate-300 hover:text-white transition-all active:scale-95 shrink-0">
+            Entregados
+          </button>
+          <button type="button" id="filtroAptEstado-todos" onclick="cambiarFiltroEstadoApartados('todos')" class="px-3 py-1 rounded-xl font-bold text-[11px] bg-slate-800 text-slate-300 hover:text-white transition-all active:scale-95 shrink-0">
+            Todos
+          </button>
+        </div>
+      </div>
+
+      <!-- Contenedor de la Lista de Apartados -->
+      <div id="misApartadosList" class="space-y-3">
+        <!-- Renderizado dinámicamente por renderizarModuloApartados() -->
       </div>
     </section>
 
@@ -356,30 +509,36 @@
   </main>
 
   <!-- BOTTOM NAVIGATION BAR -->
-  <nav class="fixed bottom-0 left-0 right-0 z-40 bg-slate-900/95 backdrop-blur-md border-t border-slate-800/90 max-w-md mx-auto px-2 py-2">
-    <div class="grid grid-cols-5 gap-0.5 text-[10px] font-bold font-mono">
-      <button onclick="cambiarVista('productos')" id="navTab-productos" class="nav-item active flex flex-col items-center justify-center py-1.5 rounded-xl transition-all">
+  <nav class="fixed bottom-0 left-0 right-0 z-40 bg-slate-900/95 backdrop-blur-md border-t border-slate-800/90 max-w-md mx-auto px-1 py-1.5">
+    <div class="grid grid-cols-6 gap-0.5 text-[9px] font-bold font-mono">
+      <button onclick="cambiarVista('productos')" id="navTab-productos" class="nav-item active flex flex-col items-center justify-center py-1 rounded-xl transition-all">
         <i data-lucide="wine" class="w-4 h-4 mb-0.5"></i>
         <span>Catálogo</span>
       </button>
 
-      <button onclick="cambiarVista('pedidos')" id="navTab-pedidos" class="nav-item flex flex-col items-center justify-center py-1.5 rounded-xl transition-all relative">
+      <button onclick="cambiarVista('pedidos')" id="navTab-pedidos" class="nav-item flex flex-col items-center justify-center py-1 rounded-xl transition-all relative">
         <i data-lucide="shopping-bag" class="w-4 h-4 mb-0.5"></i>
         <span>Pedidos</span>
-        <span id="navPedidosBadge" class="hidden absolute top-1 right-2 w-2 h-2 rounded-full bg-amber-400 animate-pulse"></span>
+        <span id="navPedidosBadge" class="hidden absolute top-0.5 right-1.5 w-2 h-2 rounded-full bg-amber-400 animate-pulse"></span>
       </button>
 
-      <button onclick="cambiarVista('facturas')" id="navTab-facturas" class="nav-item flex flex-col items-center justify-center py-1.5 rounded-xl transition-all">
+      <button onclick="cambiarVista('apartados')" id="navTab-apartados" class="nav-item flex flex-col items-center justify-center py-1 rounded-xl transition-all relative">
+        <i data-lucide="bookmark" class="w-4 h-4 mb-0.5"></i>
+        <span>Apartados</span>
+        <span id="navApartadosBadge" class="hidden absolute top-0.5 right-1.5 w-2 h-2 rounded-full bg-blue-400 animate-pulse"></span>
+      </button>
+
+      <button onclick="cambiarVista('facturas')" id="navTab-facturas" class="nav-item flex flex-col items-center justify-center py-1 rounded-xl transition-all">
         <i data-lucide="receipt" class="w-4 h-4 mb-0.5"></i>
         <span>Facturas</span>
       </button>
 
-      <button onclick="cambiarVista('comision')" id="navTab-comision" class="nav-item flex flex-col items-center justify-center py-1.5 rounded-xl transition-all">
+      <button onclick="cambiarVista('comision')" id="navTab-comision" class="nav-item flex flex-col items-center justify-center py-1 rounded-xl transition-all">
         <i data-lucide="badge-percent" class="w-4 h-4 mb-0.5"></i>
         <span>Comisión</span>
       </button>
 
-      <button onclick="cambiarVista('clientes')" id="navTab-clientes" class="nav-item flex flex-col items-center justify-center py-1.5 rounded-xl transition-all">
+      <button onclick="cambiarVista('clientes')" id="navTab-clientes" class="nav-item flex flex-col items-center justify-center py-1 rounded-xl transition-all">
         <i data-lucide="users" class="w-4 h-4 mb-0.5"></i>
         <span>Clientes</span>
       </button>
@@ -447,6 +606,13 @@
           <label class="block font-semibold text-slate-300 mb-1">Teléfono (WhatsApp) *</label>
           <input type="tel" id="modalClienteTelefono" placeholder="Ej. 8888-8888" 
             class="w-full px-3 py-2.5 bg-slate-950 border border-slate-700 rounded-xl text-white font-mono text-xs focus:outline-none focus:border-amber-500">
+          <button type="button" id="btnContactoCliente" onclick="seleccionarContactoTelefono()"
+            class="mt-2 w-full py-2 bg-slate-800 hover:bg-slate-700 border border-slate-700 text-amber-300 font-bold rounded-xl text-xs active:scale-95 transition-all flex items-center justify-center gap-2">
+            📇 Buscar en mis contactos
+          </button>
+          <input type="file" id="inputVcardContactos" accept=".vcf,.vcard,text/vcard" class="hidden" onchange="importarContactosVcard(this)">
+          <select id="selectContactoVcard" onchange="elegirContactoVcard(this.value)"
+            class="hidden mt-2 w-full px-3 py-2.5 bg-slate-950 border border-amber-500/50 rounded-xl text-xs text-white focus:outline-none"></select>
         </div>
       </div>
 
@@ -485,7 +651,7 @@
 
         <div>
           <label class="block font-semibold text-slate-400 mb-1">Tipo de Cambio de Referencia (₡)</label>
-          <input type="number" id="configTipoCambio" value="520" 
+          <input type="number" id="configTipoCambio" value="500" 
             class="w-full px-3 py-2 bg-slate-950 border border-slate-700 rounded-xl text-white font-mono text-xs focus:outline-none focus:border-amber-500">
         </div>
       </div>
@@ -535,7 +701,137 @@
         <span class="text-[11px] text-slate-400 font-medium">Toque fuera o presione ✕ para cerrar</span>
       </div>
     </div>
-  </div>  <!-- OVERLAY DE BLOQUEO DE PANTALLA DURANTE SINCRONIZACIÓN -->
+  </div>
+
+  <!-- MODAL: EXPORTAR CATÁLOGO / LISTA DE PRECIOS A WHATSAPP -->
+  <div id="modalExportarCatalogo" class="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm hidden items-end sm:items-center justify-center p-0 sm:p-4">
+    <div class="bg-slate-900 border border-slate-800 rounded-t-3xl sm:rounded-3xl max-w-lg w-full p-5 space-y-4 max-h-[90vh] overflow-y-auto shadow-2xl">
+      <!-- Encabezado Modal -->
+      <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+        <div class="flex items-center gap-2">
+          <div class="p-2 rounded-xl bg-emerald-500/20 text-emerald-400">
+            <i data-lucide="share-2" class="w-5 h-5"></i>
+          </div>
+          <div>
+            <h3 class="text-sm font-bold text-white">Exportar Catálogo para WhatsApp</h3>
+            <p class="text-[11px] text-slate-400">Precios actualizados y existencias disponibles</p>
+          </div>
+        </div>
+        <button onclick="cerrarModalExportarCatalogo()" class="p-1 text-slate-400 hover:text-white active:scale-95">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+
+      <!-- Opciones de Configuración del Exportable -->
+      <div class="grid grid-cols-2 gap-2 text-xs font-semibold">
+        <div>
+          <label class="block text-slate-400 text-[10px] uppercase font-bold mb-1">Filtro de Productos:</label>
+          <select id="exportFiltroStock" onchange="actualizarVistaPreviaExportarCatalogo()" class="w-full px-2.5 py-2 bg-slate-800 border border-slate-700 rounded-xl text-white text-xs focus:outline-none focus:border-amber-500">
+            <option value="constock">📦 Solo con Stock (> 0)</option>
+            <option value="todos">📋 Todo el Catálogo</option>
+          </select>
+        </div>
+        <div>
+          <label class="block text-slate-400 text-[10px] uppercase font-bold mb-1">Categoría:</label>
+          <select id="exportFiltroCategoria" onchange="actualizarVistaPreviaExportarCatalogo()" class="w-full px-2.5 py-2 bg-slate-800 border border-slate-700 rounded-xl text-white text-xs focus:outline-none focus:border-amber-500">
+            <option value="Todas">Todas las categorías</option>
+          </select>
+        </div>
+        <div class="col-span-2 flex items-center justify-between px-3 py-2 bg-slate-950/70 border border-slate-800 rounded-xl">
+          <span class="text-slate-300 text-xs font-medium">Mostrar cantidad de unidades:</span>
+          <label class="relative inline-flex items-center cursor-pointer">
+            <input type="checkbox" id="exportMostrarCantidades" onchange="actualizarVistaPreviaExportarCatalogo()" class="sr-only peer" checked>
+            <div class="w-9 h-5 bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-emerald-600"></div>
+          </label>
+        </div>
+      </div>
+
+      <!-- Resumen y Vista Previa -->
+      <div>
+        <div class="flex items-center justify-between text-xs mb-1.5 px-1">
+          <span class="font-bold text-slate-400 uppercase text-[10px] tracking-wider">Vista Previa (<span id="exportItemsCount" class="text-emerald-400">0</span> licores):</span>
+          <button type="button" onclick="actualizarVistaPreviaExportarCatalogo()" class="text-[10px] text-amber-400 hover:text-amber-300 font-bold flex items-center gap-1">
+            <i data-lucide="refresh-cw" class="w-3 h-3"></i> Refrescar
+          </button>
+        </div>
+        <textarea id="exportPreviewText" readonly rows="8" class="w-full px-3 py-2.5 bg-slate-950 border border-slate-800 rounded-2xl text-[11px] font-mono text-emerald-300/90 select-all focus:outline-none resize-none leading-relaxed"></textarea>
+      </div>
+
+      <!-- Botones de Acción -->
+      <div class="grid grid-cols-2 gap-2 pt-2 border-t border-slate-800">
+        <button type="button" onclick="copiarTextoCatalogoWhatsApp()" class="py-3 px-3 bg-slate-800 hover:bg-slate-700 border border-slate-700 active:scale-95 text-slate-200 font-bold text-xs rounded-xl flex items-center justify-center gap-1.5 transition-all">
+          <i data-lucide="copy" class="w-4 h-4 text-amber-400"></i>
+          <span>Copiar Texto</span>
+        </button>
+        <button type="button" onclick="enviarCatalogoWhatsAppDirecto()" class="py-3 px-3 bg-emerald-600 hover:bg-emerald-500 active:scale-95 text-white font-bold text-xs rounded-xl flex items-center justify-center gap-1.5 shadow-lg shadow-emerald-600/30 transition-all">
+          <i data-lucide="message-circle" class="w-4 h-4"></i>
+          <span>Abrir WhatsApp</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: REGISTRAR ABONO A APARTADO -->
+  <div id="modalRegistrarAbonoApartado" class="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm hidden items-end sm:items-center justify-center p-0 sm:p-4">
+    <div class="bg-slate-900 border border-blue-500/40 rounded-t-3xl sm:rounded-3xl max-w-sm w-full p-5 space-y-4 shadow-2xl">
+      <div class="flex items-center justify-between border-b border-slate-800 pb-2.5">
+        <div class="flex items-center gap-2">
+          <div class="p-1.5 rounded-xl bg-blue-500/20 text-blue-400">
+            <i data-lucide="hand-coins" class="w-4 h-4"></i>
+          </div>
+          <div>
+            <h3 class="text-xs font-bold text-white uppercase tracking-wider">Registrar Abono</h3>
+            <p id="modalAbonoApartadoSubtitulo" class="text-[10px] text-slate-400 font-mono">APT-XXXXXX</p>
+          </div>
+        </div>
+        <button onclick="cerrarModalAbonoApartado()" class="text-slate-400 hover:text-white text-xs font-bold">✕</button>
+      </div>
+
+      <!-- Resumen Saldo -->
+      <div class="bg-slate-950/80 border border-slate-800 rounded-2xl p-2.5 grid grid-cols-2 gap-2 text-xs font-mono">
+        <div>
+          <span class="text-[9.5px] text-slate-400 block font-sans">Total Apartado:</span>
+          <span id="modalAbonoTotalCRC" class="font-bold text-white text-xs">₡0</span>
+        </div>
+        <div>
+          <span class="text-[9.5px] text-slate-400 block font-sans">Saldo Pendiente:</span>
+          <span id="modalAbonoSaldoCRC" class="font-black text-amber-400 text-xs">₡0</span>
+        </div>
+      </div>
+
+      <!-- Formulario de Abono -->
+      <form onsubmit="event.preventDefault(); guardarNuevoAbonoApartado();" class="space-y-3 text-xs">
+        <input type="hidden" id="modalAbonoIdApartado">
+        <div>
+          <label for="inputMontoAbonoCRC" class="block font-semibold text-slate-300 mb-1">Monto a Abonar (₡ Colones):</label>
+          <input type="number" id="inputMontoAbonoCRC" required min="100" step="100" placeholder="Ej: 5000"
+            class="w-full px-3 py-2 bg-slate-950 border border-slate-700 rounded-xl text-white font-mono font-bold text-sm focus:border-blue-400 focus:outline-none">
+        </div>
+
+        <div>
+          <label for="selectMetodoPagoAbono" class="block font-semibold text-slate-300 mb-1">Método de Pago:</label>
+          <select id="selectMetodoPagoAbono" class="w-full px-2.5 py-2 bg-slate-950 border border-slate-700 rounded-xl text-white font-semibold focus:border-blue-400">
+            <option value="Efectivo">💵 Efectivo</option>
+            <option value="SINPE / Transf.">📱 SINPE</option>
+            <option value="Tarjeta">💳 Tarjeta</option>
+          </select>
+        </div>
+
+        <div>
+          <label for="inputNotasAbono" class="block text-slate-400 mb-1">Notas u observaciones:</label>
+          <input type="text" id="inputNotasAbono" placeholder="Opcional..."
+            class="w-full px-3 py-1.5 bg-slate-950 border border-slate-700 rounded-xl text-white text-xs focus:border-blue-400 focus:outline-none">
+        </div>
+
+        <button type="submit" class="w-full py-2.5 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-black rounded-xl shadow-lg shadow-blue-500/25 active:scale-95 transition-all flex items-center justify-center gap-2 text-xs">
+          <i data-lucide="check" class="w-4 h-4"></i>
+          <span>GUARDAR ABONO</span>
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <!-- OVERLAY DE BLOQUEO DE PANTALLA DURANTE SINCRONIZACIÓN -->
   <div id="syncBlockingOverlay" class="fixed inset-0 z-[9999] bg-slate-950/85 backdrop-blur-md hidden flex-col items-center justify-center p-6 select-none transition-all duration-300">
     <div class="max-w-sm w-full bg-slate-900 border border-amber-500/40 rounded-3xl p-6 shadow-2xl text-center space-y-4">
       <div class="relative w-16 h-16 mx-auto flex items-center justify-center">
@@ -554,6 +850,6 @@
     </div>
   </div>
 
-  <script src="app.js?v=20260913_03"></script>
+  <script src="app.js?v=20261008_01"></script>
 </body>
 </html>
